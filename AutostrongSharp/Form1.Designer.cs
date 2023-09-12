@@ -32,7 +32,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             ButtonAbort = new Button();
             ButtonSelectDir = new Button();
-            label7 = new Label();
+            authorLabel = new Label();
             versionLabel = new Label();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
             toolStripProgressBar1 = new ToolStripProgressBar();
@@ -83,15 +83,15 @@
             ButtonSelectDir.DragDrop += TBFilepath_DragDrop;
             ButtonSelectDir.DragOver += TBFilepath_DragOver;
             // 
-            // label7
+            // authorLabel
             // 
-            label7.AutoSize = true;
-            label7.Font = new Font("Segoe UI", 7F, FontStyle.Regular, GraphicsUnit.Point);
-            label7.Location = new Point(423, 143);
-            label7.Name = "label7";
-            label7.Size = new Size(75, 12);
-            label7.TabIndex = 35;
-            label7.Text = "Mi5hmasH 2023";
+            authorLabel.AutoSize = true;
+            authorLabel.Font = new Font("Segoe UI", 7F, FontStyle.Regular, GraphicsUnit.Point);
+            authorLabel.Location = new Point(423, 143);
+            authorLabel.Name = "authorLabel";
+            authorLabel.Size = new Size(75, 12);
+            authorLabel.TabIndex = 35;
+            authorLabel.Text = "Mi5hmasH 2023";
             // 
             // versionLabel
             // 
@@ -272,7 +272,7 @@
             Controls.Add(comboBoxGameProfile);
             Controls.Add(pb_GameProfileIcon);
             Controls.Add(ButtonAbort);
-            Controls.Add(label7);
+            Controls.Add(authorLabel);
             Controls.Add(versionLabel);
             Controls.Add(statusStrip1);
             Controls.Add(ButtonResignAll);
@@ -301,7 +301,7 @@
         #endregion
         private Button ButtonAbort;
         private Button ButtonSelectDir;
-        private Label label7;
+        private Label authorLabel;
         private Label versionLabel;
         private ToolStripStatusLabel toolStripStatusLabel1;
         private ToolStripProgressBar toolStripProgressBar1;

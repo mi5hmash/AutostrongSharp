@@ -9,7 +9,7 @@ namespace AutostrongSharp;
 
 public partial class Form1 : Form
 {
-    private AutoStrongDeencryptor _deencryptor = new();
+    private readonly AutoStrongDeencryptor _deencryptor = new();
     private DsssGameProfileService _gameProfile = new();
     private CancellationTokenSource _cts = new();
     private bool _isBusy;
@@ -31,7 +31,7 @@ public partial class Form1 : Form
         TBSteamId.Text = SteamIdFixer(TBSteamId.Text);
         return;
 
-        string SteamIdFixer(string textBoxText) => ulong.TryParse(textBoxText, out var result) ? ((uint)result).ToString() : "0";
+        static string SteamIdFixer(string textBoxText) => ulong.TryParse(textBoxText, out var result) ? ((uint)result).ToString() : "0";
     }
 
     private void ResetToolStrip()
@@ -76,8 +76,9 @@ public partial class Form1 : Form
 
         // set controls
         TBFilepath.Text = AppInfo.RootPath;
-        backupCheckBox.Checked = AppInfo.BackupEnabled;
-        versionLabel.Text = $@"v{AppInfo.ToolVersion}";
+        backupCheckBox.Checked = AppInfo.GetBackupEnabled();
+        versionLabel.Text = $@"v{AppInfo.Version}";
+        authorLabel.Text = $@"{AppInfo.Author} 2023";
 
         // transparent picture hack
         pb_AppIcon.Controls.Add(pb_GameProfileIcon);
@@ -104,7 +105,7 @@ public partial class Form1 : Form
         => Process.Start(new ProcessStartInfo { FileName = $"https://store.steampowered.com/app/{_gameProfile.SteamAppId}/", UseShellExecute = true });
 
     private void backupCheckBox_CheckedChanged(object sender, EventArgs e)
-        => AppInfo.BackupEnabled ^= true;
+        => AppInfo.ToggleBackupEnabled();
 
     private void ButtonSelectDir_Click(object sender, EventArgs e)
     {
