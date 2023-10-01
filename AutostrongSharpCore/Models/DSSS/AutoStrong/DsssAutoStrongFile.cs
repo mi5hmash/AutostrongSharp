@@ -24,12 +24,7 @@ public class DsssAutoStrongFile
     /// Footer of DSSS file.
     /// </summary>
     public DsssFooter Footer { get; set; } = new();
-
-    /// <summary>
-    /// A path to DSSS '*.bin' archive.
-    /// </summary>
-    private string DsssPath { get; set; } = "";
-
+    
     /// <summary>
     /// Hashes needed to calculate checksum.
     /// </summary>
@@ -55,17 +50,16 @@ public class DsssAutoStrongFile
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
-    public BoolResult LoadFile(string filePath)
+    public BoolResult SetFileData(string filePath)
     {
-        DsssPath = filePath;
-        FileStream stream;
+        FileStream fs;
         try
         {
-            stream = File.OpenRead(DsssPath);
+            fs = File.OpenRead(filePath);
         }
         catch { return new BoolResult(false, "Couldn't load the file. Error on trying to open the file."); }
 
-        using BinReader br = new(stream);
+        using BinReader br = new(fs);
         try
         {
             // try to load header data into the Header
@@ -86,7 +80,7 @@ public class DsssAutoStrongFile
         test = Header.CheckIntegrity();
         if (!test.Result) return new BoolResult(test.Result, $"Couldn't load the file. {test.Description}");
 
-        var dataLength = stream.Length - (Marshal.SizeOf<DsssHeader>() + Marshal.SizeOf<DsssAutoStrongDataHeader>() + Marshal.SizeOf<DsssFooter>());
+        var dataLength = fs.Length - (Marshal.SizeOf<DsssHeader>() + Marshal.SizeOf<DsssAutoStrongDataHeader>() + Marshal.SizeOf<DsssFooter>());
         var dataSize = dataLength / Marshal.SizeOf<uint>();
 
         // load data
@@ -107,10 +101,10 @@ public class DsssAutoStrongFile
     }
 
     /// <summary>
-    /// Save an existing object of a DsssAutoStrong type as a new '*.bin' archive.
+    /// Get an existing object of a DsssAutoStrong type as byte array.
     /// </summary>
-    /// <param name="filePath"></param>
-    public void SaveFile(string filePath)
+    /// <returns></returns>
+    public Span<byte> GetFileData()
     {
         using MemoryStream ms = new();
         using BinWriter bw = new(ms);
@@ -129,8 +123,8 @@ public class DsssAutoStrongFile
         // sign file
         SignFile(ref dataAsInts);
 
-        // save file
-        File.WriteAllBytes(filePath, dataAsBytes.ToArray());
+        // return data
+        return dataAsBytes;
     }
 
     /// <summary>

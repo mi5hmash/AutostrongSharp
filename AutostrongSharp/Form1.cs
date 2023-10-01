@@ -37,13 +37,13 @@ public partial class Form1 : Form
     private void ResetToolStrip()
     {
         toolStripProgressBar1.Value = 0;
-        toolStripStatusLabel1.Text = "Ready";
+        toolStripStatusLabel1.Text = @"Ready";
     }
 
     private bool DoesInputDirectoryExists()
     {
         if (Directory.Exists(TBFilepath.Text)) return true;
-        MessageBox.Show($@"Directory: ""{TBFilepath.Text}"" does not exists.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        MessageBox.Show($"""Directory: "{TBFilepath.Text}" does not exists.""", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         return false;
     }
 
@@ -63,6 +63,32 @@ public partial class Form1 : Form
         toolTip1.SetToolTip(pb_GameProfileIcon, appId);
     }
 
+    private bool WriteBytesToFile(string filePath, Span<byte> fileData)
+    {
+        do
+        {
+            if (TryWriteAllBytes(filePath, fileData)) return true;
+            // Ask the user if they want to try again
+            var dialogResult = MessageBox.Show($"""Failed to save the file: "{filePath}".{Environment.NewLine}It may be currently in use by another program.{Environment.NewLine}Would you like to try again?""", @"Failed to save the file", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+            if (dialogResult == DialogResult.No) return false;
+        } while (true);
+
+        bool TryWriteAllBytes(string fPath, Span<byte> bytes)
+        {
+            try
+            {
+                File.WriteAllBytes(fPath, bytes.ToArray());
+            }
+            catch { return false; }
+            return true;
+        }
+    }
+
+    private static void CreateDirectories()
+    {
+        Directory.CreateDirectory(AppInfo.BackupPath);
+    }
+
     public Form1()
     {
         InitializeComponent();
@@ -71,8 +97,8 @@ public partial class Form1 : Form
     private void Form1_Load(object sender, EventArgs e)
     {
         // create directories
-        Directory.CreateDirectory(AppInfo.BackupPath);
         Directory.CreateDirectory(AppInfo.ProfilesPath);
+        CreateDirectories();
 
         // set controls
         TBFilepath.Text = AppInfo.RootPath;
@@ -148,6 +174,7 @@ public partial class Form1 : Form
     {
         if (_isBusy) return;
         _isBusy = true;
+        CreateDirectories();
         var pText = new Progress<string>(s => toolStripStatusLabel1.Text = s);
         var pPercentage = new Progress<int>(i => toolStripProgressBar1.Value = i);
         _cts = new CancellationTokenSource();
@@ -159,7 +186,7 @@ public partial class Form1 : Form
         }
         catch (OperationCanceledException)
         {
-            toolStripStatusLabel1.Text = "The operation was aborted by the user.";
+            toolStripStatusLabel1.Text = @"The operation was aborted by the user.";
         }
         AbortOperation();
     }
@@ -190,7 +217,7 @@ public partial class Form1 : Form
             {
                 // load file
                 var dsssFile = new DsssAutoStrongFile(_deencryptor);
-                var result = dsssFile.LoadFile(files[ctr]);
+                var result = dsssFile.SetFileData(files[ctr]);
                 if (!result.Result || !dsssFile.IsEncrypted()) goto ORDER_66;
 
                 // backup file
@@ -201,10 +228,11 @@ public partial class Form1 : Form
                 dsssFile.DecryptData();
 
                 // save file
-                dsssFile.SaveFile(files[ctr]);
+                var fileData = dsssFile.GetFileData();
+                var writeResult = WriteBytesToFile(files[ctr], fileData);
 
-                decryptedFiles++;
-            ORDER_66:
+                if (writeResult) decryptedFiles++;
+                ORDER_66:
                 Interlocked.Increment(ref progress);
                 pText.Report($@"[{progress}/{files.Length}] Processing files...");
                 pPercentage.Report((int)((double)progress / files.Length * 100));
@@ -223,6 +251,7 @@ public partial class Form1 : Form
     {
         if (_isBusy) return;
         _isBusy = true;
+        CreateDirectories();
         var pText = new Progress<string>(s => toolStripStatusLabel1.Text = s);
         var pPercentage = new Progress<int>(i => toolStripProgressBar1.Value = i);
         _cts = new CancellationTokenSource();
@@ -234,7 +263,7 @@ public partial class Form1 : Form
         }
         catch (OperationCanceledException)
         {
-            toolStripStatusLabel1.Text = "The operation was aborted by the user.";
+            toolStripStatusLabel1.Text = @"The operation was aborted by the user.";
         }
         AbortOperation();
     }
@@ -265,7 +294,7 @@ public partial class Form1 : Form
             {
                 // load file
                 var dsssFile = new DsssAutoStrongFile(_deencryptor);
-                var result = dsssFile.LoadFile(files[ctr]);
+                var result = dsssFile.SetFileData(files[ctr]);
                 if (!result.Result || dsssFile.IsEncrypted()) goto ORDER_66;
 
                 // backup file
@@ -276,10 +305,11 @@ public partial class Form1 : Form
                 dsssFile.EncryptData();
 
                 // save file
-                dsssFile.SaveFile(files[ctr]);
+                var fileData = dsssFile.GetFileData();
+                var writeResult = WriteBytesToFile(files[ctr], fileData);
 
-                encryptedFiles++;
-            ORDER_66:
+                if (writeResult) encryptedFiles++;
+                ORDER_66:
                 Interlocked.Increment(ref progress);
                 pText.Report($@"[{progress}/{files.Length}] Processing files...");
                 pPercentage.Report((int)((double)progress / files.Length * 100));
@@ -299,6 +329,7 @@ public partial class Form1 : Form
         if (_isBusy) return;
         _isBusy = true;
         ValidateSteamId();
+        CreateDirectories();
         var pText = new Progress<string>(s => toolStripStatusLabel1.Text = s);
         var pPercentage = new Progress<int>(i => toolStripProgressBar1.Value = i);
         _cts = new CancellationTokenSource();
@@ -310,7 +341,7 @@ public partial class Form1 : Form
         }
         catch (OperationCanceledException)
         {
-            toolStripStatusLabel1.Text = "The operation was aborted by the user.";
+            toolStripStatusLabel1.Text = @"The operation was aborted by the user.";
         }
         AbortOperation();
     }
@@ -341,7 +372,7 @@ public partial class Form1 : Form
             {
                 // load file
                 var dsssFile = new DsssAutoStrongFile(_deencryptor);
-                var result = dsssFile.LoadFile(files[ctr]);
+                var result = dsssFile.SetFileData(files[ctr]);
                 if (!result.Result) goto ORDER_66;
 
                 // backup file
@@ -362,10 +393,11 @@ public partial class Form1 : Form
                 }
 
                 // save file
-                dsssFile.SaveFile(files[ctr]);
+                var fileData = dsssFile.GetFileData();
+                var writeResult = WriteBytesToFile(files[ctr], fileData);
 
-                resignedFiles++;
-            ORDER_66:
+                if (writeResult) resignedFiles++;
+                ORDER_66:
                 Interlocked.Increment(ref progress);
                 pText.Report($@"[{progress}/{files.Length}] Processing files...");
                 pPercentage.Report((int)((double)progress / files.Length * 100));

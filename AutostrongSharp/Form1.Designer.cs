@@ -59,12 +59,13 @@
             // 
             // ButtonAbort
             // 
+            ButtonAbort.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
             ButtonAbort.ForeColor = Color.Brown;
-            ButtonAbort.Location = new Point(298, 124);
+            ButtonAbort.Location = new Point(295, 124);
             ButtonAbort.Name = "ButtonAbort";
-            ButtonAbort.Size = new Size(72, 23);
-            ButtonAbort.TabIndex = 9;
-            ButtonAbort.Text = "Abort";
+            ButtonAbort.Size = new Size(55, 23);
+            ButtonAbort.TabIndex = 10;
+            ButtonAbort.Text = "ABORT";
             ButtonAbort.UseVisualStyleBackColor = true;
             ButtonAbort.Visible = false;
             ButtonAbort.Click += ButtonAbort_Click;
@@ -72,9 +73,9 @@
             // ButtonSelectDir
             // 
             ButtonSelectDir.AllowDrop = true;
-            ButtonSelectDir.Location = new Point(333, 29);
+            ButtonSelectDir.Location = new Point(340, 29);
             ButtonSelectDir.Name = "ButtonSelectDir";
-            ButtonSelectDir.Size = new Size(37, 23);
+            ButtonSelectDir.Size = new Size(30, 23);
             ButtonSelectDir.TabIndex = 2;
             ButtonSelectDir.Text = "📁";
             toolTip1.SetToolTip(ButtonSelectDir, "Open the Select Directory Window");
@@ -100,7 +101,7 @@
             versionLabel.Name = "versionLabel";
             versionLabel.Size = new Size(46, 15);
             versionLabel.TabIndex = 34;
-            versionLabel.Text = "v1.0.0.0";
+            versionLabel.Text = "v1.0.1.0";
             versionLabel.TextAlign = ContentAlignment.MiddleRight;
             // 
             // toolStripStatusLabel1
@@ -128,12 +129,12 @@
             // 
             // ButtonResignAll
             // 
-            ButtonResignAll.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            ButtonResignAll.Location = new Point(174, 124);
+            ButtonResignAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
+            ButtonResignAll.Location = new Point(200, 124);
             ButtonResignAll.Name = "ButtonResignAll";
-            ButtonResignAll.Size = new Size(75, 23);
-            ButtonResignAll.TabIndex = 8;
-            ButtonResignAll.Text = "Resign All";
+            ButtonResignAll.Size = new Size(89, 23);
+            ButtonResignAll.TabIndex = 9;
+            ButtonResignAll.Text = "RESIGN ALL";
             ButtonResignAll.UseVisualStyleBackColor = true;
             ButtonResignAll.Click += ButtonResignAll_Click;
             // 
@@ -167,21 +168,23 @@
             // 
             // ButtonPackAll
             // 
-            ButtonPackAll.Location = new Point(93, 124);
+            ButtonPackAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
+            ButtonPackAll.Location = new Point(104, 124);
             ButtonPackAll.Name = "ButtonPackAll";
-            ButtonPackAll.Size = new Size(75, 23);
-            ButtonPackAll.TabIndex = 7;
-            ButtonPackAll.Text = "Encrypt All";
+            ButtonPackAll.Size = new Size(89, 23);
+            ButtonPackAll.TabIndex = 8;
+            ButtonPackAll.Text = "ENCRYPT ALL";
             ButtonPackAll.UseVisualStyleBackColor = true;
             ButtonPackAll.Click += ButtonEncryptAll_Click;
             // 
             // ButtonUnpackAll
             // 
+            ButtonUnpackAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
             ButtonUnpackAll.Location = new Point(12, 124);
             ButtonUnpackAll.Name = "ButtonUnpackAll";
-            ButtonUnpackAll.Size = new Size(75, 23);
-            ButtonUnpackAll.TabIndex = 6;
-            ButtonUnpackAll.Text = "Decrypt All";
+            ButtonUnpackAll.Size = new Size(89, 23);
+            ButtonUnpackAll.TabIndex = 7;
+            ButtonUnpackAll.Text = "DECRYPT ALL";
             ButtonUnpackAll.UseVisualStyleBackColor = true;
             ButtonUnpackAll.Click += ButtonDecryptAll_Click;
             // 
@@ -190,7 +193,7 @@
             TBFilepath.AllowDrop = true;
             TBFilepath.Location = new Point(12, 29);
             TBFilepath.Name = "TBFilepath";
-            TBFilepath.Size = new Size(315, 23);
+            TBFilepath.Size = new Size(322, 23);
             TBFilepath.TabIndex = 1;
             TBFilepath.TextChanged += TBFilepath_TextChanged;
             TBFilepath.DragDrop += TBFilepath_DragDrop;
@@ -240,10 +243,10 @@
             // ButtonOpenBackupDir
             // 
             ButtonOpenBackupDir.ForeColor = SystemColors.ControlDarkDark;
-            ButtonOpenBackupDir.Location = new Point(255, 124);
+            ButtonOpenBackupDir.Location = new Point(340, 57);
             ButtonOpenBackupDir.Name = "ButtonOpenBackupDir";
-            ButtonOpenBackupDir.Size = new Size(37, 23);
-            ButtonOpenBackupDir.TabIndex = 10;
+            ButtonOpenBackupDir.Size = new Size(30, 23);
+            ButtonOpenBackupDir.TabIndex = 6;
             ButtonOpenBackupDir.Text = "⚙";
             toolTip1.SetToolTip(ButtonOpenBackupDir, "Open the _BACKUP directory");
             ButtonOpenBackupDir.UseVisualStyleBackColor = true;
@@ -252,12 +255,12 @@
             // backupCheckBox
             // 
             backupCheckBox.AutoSize = true;
-            backupCheckBox.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            backupCheckBox.Location = new Point(305, 61);
+            backupCheckBox.Font = new Font("Segoe UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point);
+            backupCheckBox.Location = new Point(272, 61);
             backupCheckBox.Name = "backupCheckBox";
-            backupCheckBox.Size = new Size(65, 19);
+            backupCheckBox.Size = new Size(66, 17);
             backupCheckBox.TabIndex = 5;
-            backupCheckBox.Text = "Backup";
+            backupCheckBox.Text = "BACKUP";
             backupCheckBox.UseVisualStyleBackColor = true;
             backupCheckBox.CheckedChanged += backupCheckBox_CheckedChanged;
             // 
@@ -288,7 +291,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             Name = "Form1";
-            Text = "AutostrongSharp";
+            Text = "Autostrong Sharp";
             Load += Form1_Load;
             statusStrip1.ResumeLayout(false);
             statusStrip1.PerformLayout();

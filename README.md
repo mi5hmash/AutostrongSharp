@@ -39,20 +39,19 @@ There are three ways to achieve this. The first one is to drop the SaveData file
 > **Note:** The program will extract the Steam32_ID from the "Input Folder Path" TextBox **(1)**, if it ends with *"<steam_id>\\<steam_appid>\remote\win64_save"*, and will fill the TextBox **(3)** for you.
 
 ## Decrypting files
-Select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Decrypt All"** button **(6)**.
+Select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Decrypt All"** button **(7)**.
 
 ## Encrypting files
-Select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Encrypt All"** button **(7)**.
+Select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Encrypt All"** button **(8)**.
 
 ## Resigning files
-Type in the Steam32_ID of the user that will use the SaveData file\s, into a TextBox **(3)**.   
-Then, type in the Steam32_ID, that you want to pack the SaveData file\s with, into a TextBox **(4)**. You can use [this site](https://www.steamidfinder.com) to find it. Once you have it typed in, select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Resign All"** button **(8)**.
+If you just want to resign your SaveData files to use them on another Steam Account then type in the Steam32_ID of that Steam Account into a TextBox **(3)**. You can use [this site](https://www.steamidfinder.com) to find it. Once you have it typed in, select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Resign All"** button **(9)**.
 
 ## Backup functionality
 By default, the backup option is checked **(5)**. In this state, the application will back up files before each operation to the the new folder inside the ***"AutostrongSharp/_BACKUP/"*** directory. Application can create up to 3 folders.
 
 ## Open the Backup Directory
-You can open the Backup directory in a new Explorer window by using the button **(9)**.
+You can open the Backup directory in a new Explorer window by using the button **(6)**.
 
 ## Other buttons
 Button **(10)** cancels the currently running operation.
