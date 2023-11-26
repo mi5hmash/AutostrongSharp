@@ -9,18 +9,18 @@ public class DsssGameProfileService
     /// <summary>
     /// Name of the profile.
     /// </summary>
-    public string ProfileName { get; } = "DSSS";
+    public static string ProfileName => "DSSS";
 
     /// <summary>
     /// Magic string used for spell casting.
     /// </summary>
-    private string Magic { get; } = @"{`liVW.(%(e6iP\Hy/Le\ivA(xx.>sx\Ml2pDe}^Of9rmMf&=>01UXh3k?wWv^|Y`/M_B(l5";
+    private static string Magic => @"{`liVW.(%(e6iP\Hy/Le\ivA(xx.>sx\Ml2pDe}^Of9rmMf&=>01UXh3k?wWv^|Y`/M_B(l5";
 
     /// <summary>
     /// Game Profile version.
     /// </summary>
-    private uint GpVersion { get; } = 1;
-    
+    private static uint GpVersion => 1;
+
     /// <summary>
     /// Enumeration of all available Platforms.
     /// </summary>

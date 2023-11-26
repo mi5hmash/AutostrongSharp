@@ -30,8 +30,7 @@ public static class SimpleDeencryptor
     public static string Encrypto(this string inputString, string magic)
     {
         var entryData = inputString.FromUtf8String();
-        using var md5 = MD5.Create();
-        var checksum = md5.ComputeHash(entryData);
+        var checksum = MD5.HashData(entryData);
         using MemoryStream ms = new();
         ms.Write(magic.FromAsciiString().SimpleDeEncryption(checksum));
         using MemoryStream ms2 = new();

@@ -22,24 +22,9 @@ public static class AppInfo
     public static string Description => GetDescription();
 
     public static string Copyright => GetCopyright();
-
-    private static bool _backupEnabled = true;
-    public static bool GetBackupEnabled() => _backupEnabled;
-    public static bool SetBackupEnabled(bool boolean) => _backupEnabled = boolean;
-    public static bool ToggleBackupEnabled() => _backupEnabled ^= true;
-
+    
     #endregion
-
-    #region OTHER INFO
-
-    public static string BackupFolder => "_BACKUP";
-    public static string BackupPath => Path.Combine(RootPath, BackupFolder);
-
-    public static string ProfilesFolder => "profiles";
-    public static string ProfilesPath => Path.Combine(RootPath, ProfilesFolder);
-
-    #endregion
-
+    
     #region METHODS
 
     /// <summary>

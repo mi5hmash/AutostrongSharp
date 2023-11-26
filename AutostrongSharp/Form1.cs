@@ -1,108 +1,28 @@
-using System.Diagnostics;
 using AutostrongSharp.Helpers;
-using AutostrongSharpCore.Helpers;
-using AutostrongSharpCore.Models;
-using AutostrongSharpCore.Models.DSSS.AutoStrong;
-using System.Text.RegularExpressions;
+using AutostrongSharpCore;
 
 namespace AutostrongSharp;
 
 public partial class Form1 : Form
 {
-    private readonly AutoStrongDeencryptor _deencryptor = new();
-    private DsssGameProfileService _gameProfile = new();
-    private CancellationTokenSource _cts = new();
-    private bool _isBusy;
-    private int _gameProfileIndex;
-
-    private List<ProfileFile> _dataSource = new();
-
-    private static string PathPattern => @$"\{Path.DirectorySeparatorChar}(\d+)\{Path.DirectorySeparatorChar}(\d+)\{Path.DirectorySeparatorChar}remote\{Path.DirectorySeparatorChar}win64_save\{Path.DirectorySeparatorChar}?$";
-
-    private void ExtractSteamIdFromPathIfValid()
-    {
-        var match = Regex.Match(TBFilepath.Text, PathPattern);
-        if (!match.Success) return;
-        TBSteamId.Text = match.Groups[1].Value;
-    }
-
-    private void ValidateSteamId()
-    {
-        TBSteamId.Text = SteamIdFixer(TBSteamId.Text);
-        return;
-
-        static string SteamIdFixer(string textBoxText) => ulong.TryParse(textBoxText, out var result) ? ((uint)result).ToString() : "0";
-    }
-
-    private void ResetToolStrip()
-    {
-        toolStripProgressBar1.Value = 0;
-        toolStripStatusLabel1.Text = @"Ready";
-    }
-
-    private bool DoesInputDirectoryExists()
-    {
-        if (Directory.Exists(TBFilepath.Text)) return true;
-        MessageBox.Show($"""Directory: "{TBFilepath.Text}" does not exists.""", @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        return false;
-    }
-
-    private void PopulateGameProfileComboBox()
-    {
-        _dataSource = Directory.GetFiles(AppInfo.ProfilesPath, "*.bin", SearchOption.TopDirectoryOnly).Select(file => new ProfileFile(file)).ToList();
-        comboBoxGameProfile.DataSource = _dataSource;
-        comboBoxGameProfile.DisplayMember = "Name";
-    }
-
-    private void SetGameProfileIcon()
-    {
-        pb_GameProfileIcon.Visible = true;
-        using MemoryStream ms = new(Convert.FromBase64String(_gameProfile.Base64AppIcon));
-        pb_GameProfileIcon.Image = Image.FromStream(ms);
-        var appId = $"AppID: {_gameProfile.SteamAppId}";
-        toolTip1.SetToolTip(pb_GameProfileIcon, appId);
-    }
-
-    private bool WriteBytesToFile(string filePath, Span<byte> fileData)
-    {
-        do
-        {
-            if (TryWriteAllBytes(filePath, fileData)) return true;
-            // Ask the user if they want to try again
-            var dialogResult = MessageBox.Show($"""Failed to save the file: "{filePath}".{Environment.NewLine}It may be currently in use by another program.{Environment.NewLine}Would you like to try again?""", @"Failed to save the file", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
-            if (dialogResult == DialogResult.No) return false;
-        } while (true);
-
-        bool TryWriteAllBytes(string fPath, Span<byte> bytes)
-        {
-            try
-            {
-                File.WriteAllBytes(fPath, bytes.ToArray());
-            }
-            catch { return false; }
-            return true;
-        }
-    }
-
-    private static void CreateDirectories()
-    {
-        Directory.CreateDirectory(AppInfo.BackupPath);
-    }
+    private readonly Core _programCore;
 
     public Form1()
     {
+        var mediator = new SimpleMediatorWinForms();
+        var pText = new Progress<string>(s => toolStripStatusLabel1.Text = s);
+        var pValue = new Progress<int>(i => toolStripProgressBar1.Value = i);
+        _programCore = new Core(mediator, pText, pValue);
+
         InitializeComponent();
     }
 
     private void Form1_Load(object sender, EventArgs e)
     {
-        // create directories
-        Directory.CreateDirectory(AppInfo.ProfilesPath);
-        CreateDirectories();
-
         // set controls
         TBFilepath.Text = AppInfo.RootPath;
-        backupCheckBox.Checked = AppInfo.GetBackupEnabled();
+        TBSteamId.Text = @"0";
+        backupCheckBox.Checked = _programCore.BackupEnabled;
         versionLabel.Text = $@"v{AppInfo.Version}";
         authorLabel.Text = $@"{AppInfo.Author} 2023";
 
@@ -112,303 +32,131 @@ public partial class Form1 : Form
         PopulateGameProfileComboBox();
     }
 
-    private void comboBoxGameProfile_SelectedIndexChanged(object sender, EventArgs e)
+    #region GAME_PROFILE
+
+    private void PopulateGameProfileComboBox()
     {
-        var senderObj = (ComboBox)sender;
-        if (_isBusy)
-        {
-            senderObj.SelectedIndex = _gameProfileIndex;
-            return;
-        }
-        _gameProfile = new DsssGameProfileService();
-        var result = _gameProfile.LoadGameProfile(_dataSource[comboBoxGameProfile.SelectedIndex].FullPath, _deencryptor);
-        toolStripStatusLabel1.Text = result.Description;
-        _gameProfileIndex = senderObj.SelectedIndex;
-        SetGameProfileIcon();
+        comboBoxGameProfile.DataSource = _programCore.GameProfileFiles;
+        comboBoxGameProfile.DisplayMember = "Name";
     }
 
-    private void pb_GameProfileIcon_Click(object sender, EventArgs e)
-        => Process.Start(new ProcessStartInfo { FileName = $"https://store.steampowered.com/app/{_gameProfile.SteamAppId}/", UseShellExecute = true });
-
-    private void backupCheckBox_CheckedChanged(object sender, EventArgs e)
-        => AppInfo.ToggleBackupEnabled();
-
-    private void ButtonSelectDir_Click(object sender, EventArgs e)
+    private void ComboBoxGameProfile_SelectedIndexChanged(object sender, EventArgs e)
     {
-        if (_isBusy) return;
-        if (folderBrowserDialog1.ShowDialog() == DialogResult.OK) TBFilepath.Text = folderBrowserDialog1.SelectedPath;
+        if (sender is not ComboBox comboBox) return;
+        _programCore.SetNewGameProfile(comboBoxGameProfile.SelectedIndex);
+        SetGameProfileIcon();
+        comboBox.SelectedIndexChanged -= ComboBoxGameProfile_SelectedIndexChanged!;
+        comboBox.SelectedIndex = _programCore.GameProfileIndex;
+        comboBox.SelectedIndexChanged += ComboBoxGameProfile_SelectedIndexChanged!;
+    }
+
+    private void SetGameProfileIcon()
+    {
+        pb_GameProfileIcon.Visible = true;
+        using MemoryStream ms = new(Convert.FromBase64String(_programCore.GetGameProfileIcon()));
+        pb_GameProfileIcon.Image = Image.FromStream(ms);
+        var appId = $"AppID: {_programCore.GetGameProfileSteamAppId()}";
+        toolTip1.SetToolTip(pb_GameProfileIcon, appId);
+    }
+
+    private void Pb_GameProfileIcon_Click(object sender, EventArgs e)
+        => _programCore.VisitGameWebsite();
+
+    #endregion
+
+    #region BACKUP
+
+    private void BackupCheckBox_CheckedChanged(object sender, EventArgs e)
+    {
+        if (sender is not CheckBox checkBox) return;
+        _programCore.SetBackupEnabled(checkBox.Checked);
+        // detach event to prevent stack overflow
+        checkBox.CheckedChanged -= BackupCheckBox_CheckedChanged!;
+        // update checkBox state
+        checkBox.Checked = _programCore.BackupEnabled;
+        // re-attach the event
+        checkBox.CheckedChanged += BackupCheckBox_CheckedChanged!;
     }
 
     private void ButtonOpenBackupDir_Click(object sender, EventArgs e)
-        => IoHelpers.OpenDirectory(Path.Combine(AppInfo.RootPath, AppInfo.BackupPath));
+        => Core.OpenBackupDirectory();
 
-    private void TBFilepath_TextChanged(object sender, EventArgs e)
+    #endregion
+
+    #region STEAM_ID
+
+    private void TBSteamId_Leave(object sender, EventArgs e)
     {
-        ResetToolStrip();
-        ExtractSteamIdFromPathIfValid();
+        if (sender is not TextBox textBox) return;
+        _programCore.SetSteamId(textBox.Text);
+        textBox.Text = _programCore.SteamId.ToString();
     }
+
+    #endregion
+
+    #region INPUT_PATH
+
+    private void ValidateFilepath(object sender)
+    {
+        if (sender is not TextBox textBox) return;
+        _programCore.SetInputDirectory(textBox.Text);
+        textBox.Text = _programCore.InputDirectory;
+        TBSteamId.Text = _programCore.SteamId.ToString();
+    }
+
+    private void TBFilepath_Leave(object sender, EventArgs e)
+        => ValidateFilepath(sender);
 
     private void TBFilepath_DragDrop(object sender, DragEventArgs e)
     {
+        if (sender is not TextBox textBox) return;
         if (!e.Data!.GetDataPresent(DataFormats.FileDrop)) return;
         var filePaths = (string[])e.Data.GetData(DataFormats.FileDrop)!;
         var filePath = filePaths[0];
         if ((File.GetAttributes(filePath) & FileAttributes.Directory) != FileAttributes.Directory)
             filePath = Path.GetDirectoryName(filePath);
-        TBFilepath.Text = filePath;
+        textBox.Text = filePath;
+        ValidateFilepath(textBox);
     }
 
     private void TBFilepath_DragOver(object sender, DragEventArgs e)
         => e.Effect = DragDropEffects.Copy;
 
-    private void ButtonAbort_Click(object sender, EventArgs e) => AbortOperation();
-    private void AbortOperation()
+    private void ButtonSelectDir_Click(object sender, EventArgs e)
     {
-        _cts.Cancel();
-        _cts.Dispose();
+        if (_programCore.IsBusy) return;
+        if (folderBrowserDialog1.ShowDialog() != DialogResult.OK) return;
+        TBFilepath.Text = folderBrowserDialog1.SelectedPath;
+        ValidateFilepath(TBFilepath);
+    }
+
+    #endregion
+
+    #region OPERATIONS
+
+    private void ButtonAbort_Click(object sender, EventArgs e)
+        => _programCore.AbortOperation();
+
+    private delegate Task OperationDelegate();
+
+    private async Task ProcessAsyncOperation(OperationDelegate operationDelegate)
+    {
+        if (_programCore.IsBusy) return;
+
+        ButtonAbort.Visible = true;
+        await operationDelegate();
         ButtonAbort.Visible = false;
-        _isBusy = false;
     }
 
     private async void ButtonDecryptAll_Click(object sender, EventArgs e)
-    {
-        if (_isBusy) return;
-        _isBusy = true;
-        CreateDirectories();
-        var pText = new Progress<string>(s => toolStripStatusLabel1.Text = s);
-        var pPercentage = new Progress<int>(i => toolStripProgressBar1.Value = i);
-        _cts = new CancellationTokenSource();
-        ButtonAbort.Visible = true;
-
-        try
-        {
-            await DecryptAll(pText, pPercentage);
-        }
-        catch (OperationCanceledException)
-        {
-            toolStripStatusLabel1.Text = @"The operation was aborted by the user.";
-        }
-        AbortOperation();
-    }
-    private Task DecryptAll(IProgress<string> pText, IProgress<int> pPercentage)
-    {
-        return Task.Run(() =>
-        {
-            if (!DoesInputDirectoryExists()) return;
-
-            var decryptedFiles = 0;
-
-            var files = Directory.GetFiles(TBFilepath.Text);
-
-            ParallelOptions po = new()
-            {
-                CancellationToken = _cts.Token,
-                MaxDegreeOfParallelism = Environment.ProcessorCount - 1
-            };
-
-            // initialize backup
-            BackupLogic backup = new(AppInfo.BackupPath);
-            if (files.Length > 0) backup.NewBackup();
-
-            var progress = 0;
-            pText.Report($@"[{progress}/{files.Length}] Processing files...");
-            pPercentage.Report(progress);
-            Parallel.For((long)0, files.Length, po, (ctr) =>
-            {
-                // load file
-                var dsssFile = new DsssAutoStrongFile(_deencryptor);
-                var result = dsssFile.SetFileData(files[ctr]);
-                if (!result.Result || !dsssFile.IsEncrypted()) goto ORDER_66;
-
-                // backup file
-                if (backupCheckBox.Checked) backup.Backup(files[ctr]);
-
-                // decrypt file
-                dsssFile.DecryptDataHeader();
-                dsssFile.DecryptData();
-
-                // save file
-                var fileData = dsssFile.GetFileData();
-                var writeResult = WriteBytesToFile(files[ctr], fileData);
-
-                if (writeResult) decryptedFiles++;
-                ORDER_66:
-                Interlocked.Increment(ref progress);
-                pText.Report($@"[{progress}/{files.Length}] Processing files...");
-                pPercentage.Report((int)((double)progress / files.Length * 100));
-
-            });
-
-            // delete backup folder if no files were processed
-            if (decryptedFiles == 0) backup.DeleteCurrentBackup();
-
-            pText.Report($@"Decryption done. Number of decrypted files: {decryptedFiles}.");
-            pPercentage.Report(100);
-        });
-    }
+        => await ProcessAsyncOperation(_programCore.DecryptAllAsync);
 
     private async void ButtonEncryptAll_Click(object sender, EventArgs e)
-    {
-        if (_isBusy) return;
-        _isBusy = true;
-        CreateDirectories();
-        var pText = new Progress<string>(s => toolStripStatusLabel1.Text = s);
-        var pPercentage = new Progress<int>(i => toolStripProgressBar1.Value = i);
-        _cts = new CancellationTokenSource();
-        ButtonAbort.Visible = true;
-
-        try
-        {
-            await EncryptAll(pText, pPercentage);
-        }
-        catch (OperationCanceledException)
-        {
-            toolStripStatusLabel1.Text = @"The operation was aborted by the user.";
-        }
-        AbortOperation();
-    }
-    private Task EncryptAll(IProgress<string> pText, IProgress<int> pPercentage)
-    {
-        return Task.Run(() =>
-        {
-            if (!DoesInputDirectoryExists()) return;
-
-            var encryptedFiles = 0;
-
-            var files = Directory.GetFiles(TBFilepath.Text);
-
-            ParallelOptions po = new()
-            {
-                CancellationToken = _cts.Token,
-                MaxDegreeOfParallelism = Environment.ProcessorCount - 1
-            };
-
-            // initialize backup
-            BackupLogic backup = new(AppInfo.BackupPath);
-            if (files.Length > 0) backup.NewBackup();
-
-            var progress = 0;
-            pText.Report($@"[{progress}/{files.Length}] Processing files...");
-            pPercentage.Report(progress);
-            Parallel.For((long)0, files.Length, po, (ctr) =>
-            {
-                // load file
-                var dsssFile = new DsssAutoStrongFile(_deencryptor);
-                var result = dsssFile.SetFileData(files[ctr]);
-                if (!result.Result || dsssFile.IsEncrypted()) goto ORDER_66;
-
-                // backup file
-                if (backupCheckBox.Checked) backup.Backup(files[ctr]);
-
-                // encrypt file
-                dsssFile.EncryptDataHeader();
-                dsssFile.EncryptData();
-
-                // save file
-                var fileData = dsssFile.GetFileData();
-                var writeResult = WriteBytesToFile(files[ctr], fileData);
-
-                if (writeResult) encryptedFiles++;
-                ORDER_66:
-                Interlocked.Increment(ref progress);
-                pText.Report($@"[{progress}/{files.Length}] Processing files...");
-                pPercentage.Report((int)((double)progress / files.Length * 100));
-
-            });
-
-            // delete backup folder if no files were processed
-            if (encryptedFiles == 0) backup.DeleteCurrentBackup();
-
-            pText.Report($@"Encryption done. Number of encrypted files: {encryptedFiles}.");
-            pPercentage.Report(100);
-        });
-    }
+        => await ProcessAsyncOperation(_programCore.EncryptAllAsync);
 
     private async void ButtonResignAll_Click(object sender, EventArgs e)
-    {
-        if (_isBusy) return;
-        _isBusy = true;
-        ValidateSteamId();
-        CreateDirectories();
-        var pText = new Progress<string>(s => toolStripStatusLabel1.Text = s);
-        var pPercentage = new Progress<int>(i => toolStripProgressBar1.Value = i);
-        _cts = new CancellationTokenSource();
-        ButtonAbort.Visible = true;
+        => await ProcessAsyncOperation(_programCore.ResignAllAsync);
 
-        try
-        {
-            await ResignAll(pText, pPercentage);
-        }
-        catch (OperationCanceledException)
-        {
-            toolStripStatusLabel1.Text = @"The operation was aborted by the user.";
-        }
-        AbortOperation();
-    }
-    private Task ResignAll(IProgress<string> pText, IProgress<int> pPercentage)
-    {
-        return Task.Run(() =>
-        {
-            if (!DoesInputDirectoryExists()) return;
+    #endregion
 
-            var resignedFiles = 0;
-
-            var files = Directory.GetFiles(TBFilepath.Text);
-
-            ParallelOptions po = new()
-            {
-                CancellationToken = _cts.Token,
-                MaxDegreeOfParallelism = Environment.ProcessorCount - 1
-            };
-
-            // initialize backup
-            BackupLogic backup = new(AppInfo.BackupPath);
-            if (files.Length > 0) backup.NewBackup();
-
-            var progress = 0;
-            pText.Report($@"[{progress}/{files.Length}] Processing files...");
-            pPercentage.Report(progress);
-            Parallel.For((long)0, files.Length, po, (ctr) =>
-            {
-                // load file
-                var dsssFile = new DsssAutoStrongFile(_deencryptor);
-                var result = dsssFile.SetFileData(files[ctr]);
-                if (!result.Result) goto ORDER_66;
-
-                // backup file
-                if (backupCheckBox.Checked) backup.Backup(files[ctr]);
-
-                // resign file
-                if (dsssFile.IsEncrypted())
-                {
-                    dsssFile.DecryptDataHeader();
-                    dsssFile.DataHeader.Steam32Id = uint.TryParse(TBSteamId.Text, out var steamId) ? steamId : 0;
-                    dsssFile.EncryptDataHeader();
-                }
-                else
-                {
-                    dsssFile.DataHeader.Steam32Id = uint.TryParse(TBSteamId.Text, out var steamId) ? steamId : 0;
-                    dsssFile.EncryptDataHeader();
-                    dsssFile.EncryptData();
-                }
-
-                // save file
-                var fileData = dsssFile.GetFileData();
-                var writeResult = WriteBytesToFile(files[ctr], fileData);
-
-                if (writeResult) resignedFiles++;
-                ORDER_66:
-                Interlocked.Increment(ref progress);
-                pText.Report($@"[{progress}/{files.Length}] Processing files...");
-                pPercentage.Report((int)((double)progress / files.Length * 100));
-
-            });
-
-            // delete backup folder if no files were processed
-            if (resignedFiles == 0) backup.DeleteCurrentBackup();
-
-            pText.Report($@"Resigning done. Number of resigned files: {resignedFiles}.");
-            pPercentage.Report(100);
-        });
-    }
 }

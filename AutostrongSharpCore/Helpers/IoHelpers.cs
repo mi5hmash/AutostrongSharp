@@ -47,7 +47,7 @@ public static class IoHelpers
     /// <returns></returns>
     public static string ReadFile(string filePath)
     {
-        using FileStream fs = File.OpenRead(filePath);
+        using var fs = File.OpenRead(filePath);
         using StreamReader sr = new(fs);
         return sr.ReadToEnd();
     }
@@ -58,7 +58,7 @@ public static class IoHelpers
     /// <returns></returns>
     public static async Task<string> ReadFileAsync(string filePath)
     {
-        await using FileStream fs = File.OpenRead(filePath);
+        await using var fs = File.OpenRead(filePath);
         using StreamReader sr = new(fs);
         return await sr.ReadToEndAsync();
     }
@@ -70,7 +70,7 @@ public static class IoHelpers
     /// <param name="fileContent"></param>
     public static void WriteFile(string filePath, string fileContent)
     {
-        using FileStream fs = File.OpenWrite(filePath);
+        using var fs = File.OpenWrite(filePath);
         using StreamWriter sw = new(fs);
         sw.Write(fileContent);
     }
@@ -81,10 +81,11 @@ public static class IoHelpers
     /// <param name="fileContent"></param>
     public static async Task WriteFileAsync(string filePath, string fileContent)
     {
-        await using FileStream fs = File.OpenWrite(filePath);
+        await using var fs = File.OpenWrite(filePath);
         await using StreamWriter sw = new(fs);
         await sw.WriteAsync(fileContent);
     }
+
     /// <summary>
     /// Opens the folder in explorer.
     /// </summary>

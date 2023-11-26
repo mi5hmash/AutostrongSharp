@@ -4,8 +4,8 @@ public class AutoStrongDeencryptor
 {
     #region PROPERTIES
 
-    private uint[] EncryptionKey { get; set; } = Array.Empty<uint>();
-    private uint[] EncryptionTable { get; set; } = Array.Empty<uint>();
+    private uint[] EncryptionKey { get; set; } = [];
+    private uint[] EncryptionTable { get; set; } = [];
 
     #endregion
 

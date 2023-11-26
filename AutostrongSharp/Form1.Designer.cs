@@ -59,7 +59,7 @@
             // 
             // ButtonAbort
             // 
-            ButtonAbort.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
+            ButtonAbort.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
             ButtonAbort.ForeColor = Color.Brown;
             ButtonAbort.Location = new Point(295, 124);
             ButtonAbort.Name = "ButtonAbort";
@@ -87,7 +87,7 @@
             // authorLabel
             // 
             authorLabel.AutoSize = true;
-            authorLabel.Font = new Font("Segoe UI", 7F, FontStyle.Regular, GraphicsUnit.Point);
+            authorLabel.Font = new Font("Segoe UI", 7F);
             authorLabel.Location = new Point(423, 143);
             authorLabel.Name = "authorLabel";
             authorLabel.Size = new Size(75, 12);
@@ -101,7 +101,7 @@
             versionLabel.Name = "versionLabel";
             versionLabel.Size = new Size(46, 15);
             versionLabel.TabIndex = 34;
-            versionLabel.Text = "v1.0.1.0";
+            versionLabel.Text = "v1.1.0.0";
             versionLabel.TextAlign = ContentAlignment.MiddleRight;
             // 
             // toolStripStatusLabel1
@@ -129,7 +129,7 @@
             // 
             // ButtonResignAll
             // 
-            ButtonResignAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
+            ButtonResignAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
             ButtonResignAll.Location = new Point(200, 124);
             ButtonResignAll.Name = "ButtonResignAll";
             ButtonResignAll.Size = new Size(89, 23);
@@ -168,7 +168,7 @@
             // 
             // ButtonPackAll
             // 
-            ButtonPackAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
+            ButtonPackAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
             ButtonPackAll.Location = new Point(104, 124);
             ButtonPackAll.Name = "ButtonPackAll";
             ButtonPackAll.Size = new Size(89, 23);
@@ -179,7 +179,7 @@
             // 
             // ButtonUnpackAll
             // 
-            ButtonUnpackAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
+            ButtonUnpackAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
             ButtonUnpackAll.Location = new Point(12, 124);
             ButtonUnpackAll.Name = "ButtonUnpackAll";
             ButtonUnpackAll.Size = new Size(89, 23);
@@ -195,16 +195,17 @@
             TBFilepath.Name = "TBFilepath";
             TBFilepath.Size = new Size(322, 23);
             TBFilepath.TabIndex = 1;
-            TBFilepath.TextChanged += TBFilepath_TextChanged;
             TBFilepath.DragDrop += TBFilepath_DragDrop;
             TBFilepath.DragOver += TBFilepath_DragOver;
+            TBFilepath.Leave += TBFilepath_Leave;
             // 
             // TBSteamId
             // 
             TBSteamId.Location = new Point(12, 83);
             TBSteamId.Name = "TBSteamId";
-            TBSteamId.Size = new Size(136, 23);
+            TBSteamId.Size = new Size(118, 23);
             TBSteamId.TabIndex = 3;
+            TBSteamId.Leave += TBSteamId_Leave;
             // 
             // pb_GameProfileIcon
             // 
@@ -218,23 +219,23 @@
             pb_GameProfileIcon.TabStop = false;
             toolTip1.SetToolTip(pb_GameProfileIcon, "AppID: ?");
             pb_GameProfileIcon.Visible = false;
-            pb_GameProfileIcon.Click += pb_GameProfileIcon_Click;
+            pb_GameProfileIcon.Click += Pb_GameProfileIcon_Click;
             // 
             // comboBoxGameProfile
             // 
             comboBoxGameProfile.DropDownStyle = ComboBoxStyle.DropDownList;
             comboBoxGameProfile.FormattingEnabled = true;
-            comboBoxGameProfile.Location = new Point(154, 83);
+            comboBoxGameProfile.Location = new Point(136, 83);
             comboBoxGameProfile.Name = "comboBoxGameProfile";
-            comboBoxGameProfile.Size = new Size(216, 23);
+            comboBoxGameProfile.Size = new Size(234, 23);
             comboBoxGameProfile.Sorted = true;
             comboBoxGameProfile.TabIndex = 4;
-            comboBoxGameProfile.SelectedIndexChanged += comboBoxGameProfile_SelectedIndexChanged;
+            comboBoxGameProfile.SelectedIndexChanged += ComboBoxGameProfile_SelectedIndexChanged;
             // 
             // LabelGameProfile
             // 
             LabelGameProfile.AutoSize = true;
-            LabelGameProfile.Location = new Point(154, 65);
+            LabelGameProfile.Location = new Point(136, 65);
             LabelGameProfile.Name = "LabelGameProfile";
             LabelGameProfile.Size = new Size(75, 15);
             LabelGameProfile.TabIndex = 38;
@@ -255,14 +256,14 @@
             // backupCheckBox
             // 
             backupCheckBox.AutoSize = true;
-            backupCheckBox.Font = new Font("Segoe UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point);
+            backupCheckBox.Font = new Font("Segoe UI", 8.25F);
             backupCheckBox.Location = new Point(272, 61);
             backupCheckBox.Name = "backupCheckBox";
             backupCheckBox.Size = new Size(66, 17);
             backupCheckBox.TabIndex = 5;
             backupCheckBox.Text = "BACKUP";
             backupCheckBox.UseVisualStyleBackColor = true;
-            backupCheckBox.CheckedChanged += backupCheckBox_CheckedChanged;
+            backupCheckBox.CheckedChanged += BackupCheckBox_CheckedChanged;
             // 
             // Form1
             // 

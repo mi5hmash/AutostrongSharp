@@ -3,17 +3,12 @@
 namespace AutostrongSharpCore.Helpers;
 
 /// Based on: https://github.com/tremwil/DS3SaveUnpacker/blob/master/DS3SaveUnpacker/BinRW.cs
-public class BinReader : BinaryReader
+public class BinReader(Stream stream) : BinaryReader(stream)
 {
     /// <summary>
     /// LIFO stack to keep track of the positions across StepInto and StepOut calls
     /// </summary>
-    protected Stack<long> Positions;
-
-    public BinReader(Stream stream) : base(stream)
-    {
-        Positions = new Stack<long>();
-    }
+    protected Stack<long> Positions = new();
 
     /// <summary>
     /// Step into an offset. Call <see cref="StepOut"/> to come back to the last position.

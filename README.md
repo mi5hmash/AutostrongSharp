@@ -1,7 +1,7 @@
 [![Release Version](https://img.shields.io/github/v/tag/mi5hmash/AutostrongSharp?label=version)](https://github.com/mi5hmash/AutostrongSharp/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-Unlicense-blueviolet.svg)](https://opensource.org/licenses/MIT)
 [![Visual Studio 2022](https://img.shields.io/badge/VS%202022-blueviolet?logo=visualstudio&logoColor=white)](https://visualstudio.microsoft.com/)
-[![dotNET7](https://img.shields.io/badge/.NET%207-blueviolet)](https://visualstudio.microsoft.com/)
+[![dotNET8](https://img.shields.io/badge/.NET%208-blueviolet)](https://visualstudio.microsoft.com/)
 
 # :cd: AutostrongSharp - What is it :interrobang:
 This application can **decrypt and encrypt save files** from various games running on RE Engine. It can also **resign these save files** with your own SteamID to **use any SaveData on your profile**.
@@ -48,10 +48,10 @@ Select the Game Profile **(4)** corresponding to the game from which the save fi
 If you just want to resign your SaveData files to use them on another Steam Account then type in the Steam32_ID of that Steam Account into a TextBox **(3)**. You can use [this site](https://www.steamidfinder.com) to find it. Once you have it typed in, select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Resign All"** button **(9)**.
 
 ## Backup functionality
-By default, the backup option is checked **(5)**. In this state, the application will back up files before each operation to the the new folder inside the ***"AutostrongSharp/_BACKUP/"*** directory. Application can create up to 3 folders.
+By default, the backup option is checked **(5)**. In this state, the application will back up files before each operation to the the new folder inside the ***"AutostrongSharp/_BACKUP/"*** directory. Application can create up to 3 zip archives.
 
 ## Open the Backup Directory
-You can open the Backup directory in a new Explorer window by using the button **(6)**.
+You can open the ***"AutostrongSharp/_BACKUP/"*** directory in a new Explorer window by using the button **(6)**.
 
 ## Other buttons
 Button **(10)** cancels the currently running operation.

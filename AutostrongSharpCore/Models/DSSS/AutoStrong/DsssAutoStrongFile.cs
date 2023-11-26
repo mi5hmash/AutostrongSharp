@@ -18,7 +18,7 @@ public class DsssAutoStrongFile
     /// <summary>
     /// Data of DSSS file.
     /// </summary>
-    public uint[] Data { get; set; } = Array.Empty<uint>();
+    public uint[] Data { get; set; } = [];
 
     /// <summary>
     /// Footer of DSSS file.
@@ -28,7 +28,7 @@ public class DsssAutoStrongFile
     /// <summary>
     /// Hashes needed to calculate checksum.
     /// </summary>
-    private static uint[] Hashes { get; set; } = Array.Empty<uint>();
+    private static uint[] Hashes { get; set; } = [];
 
     /// <summary>
     /// Dencryptor instance.

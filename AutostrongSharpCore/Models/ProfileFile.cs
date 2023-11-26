@@ -1,13 +1,7 @@
 ﻿namespace AutostrongSharpCore.Models;
 
-public class ProfileFile
+public class ProfileFile(string fullPath)
 {
-    public string FullPath { get; }
-    public string Name { get; }
-
-    public ProfileFile(string fullPath)
-    {
-        FullPath = fullPath;
-        Name = Path.GetFileNameWithoutExtension(fullPath);
-    }
+    public string FullPath { get; } = fullPath;
+    public string Name { get; } = Path.GetFileNameWithoutExtension((string?)fullPath) ?? string.Empty;
 }
