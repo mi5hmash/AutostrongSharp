@@ -3,7 +3,9 @@ using AutostrongSharpCore.Models;
 using AutostrongSharpCore.Models.DSSS.AutoStrong;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using static AutostrongSharpCore.Helpers.IoHelpers;
 using static AutostrongSharpCore.Helpers.ISimpleMediator;
+using static AutostrongSharpCore.Helpers.SimpleLogger;
 
 namespace AutostrongSharpCore;
 
@@ -26,8 +28,11 @@ public class Core
 
     #region BACKUP
 
+    /// <summary>
+    /// Determines if backup is enabled.
+    /// </summary>
     public bool BackupEnabled { get; private set; } = true;
-    
+
     public void SetBackupEnabled(bool boolean)
     {
         if (IsBusy) return;
@@ -40,11 +45,53 @@ public class Core
         BackupEnabled ^= true;
     }
 
+    /// <summary>
+    /// Tries to make a backup of a file.
+    /// </summary>
+    /// <param name="simpleBackup"></param>
+    /// <param name="filePath"></param>
+    /// <returns></returns>
+    private static DialogAnswer MakeBackup(string filePath, SimpleBackup simpleBackup)
+    {
+        do
+        {
+            if (TryToMakeBackup(filePath, simpleBackup)) return DialogAnswer.Continue;
+            // ask the user if they want to try again
+            var dialogResult = _mediator.Ask($"""Failed to backup the file: "{filePath}".{Environment.NewLine}The file cannot be found, or a file with the same name exists in the target location and is used by another program.{Environment.NewLine}Would you like to try again?""", "Failed to backup the file", QuestionOptions.AbortRetryIgnore, DialogType.Exclamation);
+            if (dialogResult == DialogAnswer.Retry) continue;
+            return dialogResult;
+        } while (true);
+
+        static bool TryToMakeBackup(string filePath, SimpleBackup simpleBackup)
+        {
+            try
+            {
+                simpleBackup.Backup(filePath);
+            }
+            catch { return false; }
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Opens the Backup directory
+    /// </summary>
+    public static void OpenBackupDirectory()
+        => OpenDirectory(BackupPath);
+
     #endregion
 
     #region BUSY_LOCK
 
     public bool IsBusy { get; private set; }
+
+    #endregion
+
+    #region LOGGER
+
+    private readonly SimpleLogger _logger;
+
+    public void ActivateLogger() => _logger.NewLogFile();
 
     #endregion
 
@@ -69,7 +116,7 @@ public class Core
     #region GAME_PROFILE
 
     private DsssGameProfileService _gameProfile = new();
-    public List<ProfileFile> GameProfileFiles { get; private set; } = new();
+    public List<ProfileFile> GameProfileFiles { get; private set; } = [];
     public int GameProfileIndex { get; private set; }
 
     private void RefreshGameProfiles()
@@ -93,19 +140,24 @@ public class Core
     #endregion
 
     #region CONSTRUCTOR
-
-    private readonly AutoStrongDeencryptor _deencryptor = new();
+    
     private CancellationTokenSource _cts = new();
     private static ISimpleMediator _mediator = null!;
-
+    private readonly AutoStrongDeencryptor _deencryptor = new();
+    
     /// <summary>
-    /// Default constructor.
+    /// Constructs new <see cref="Core"/> class.
     /// </summary>
-    public Core(ISimpleMediator mediator, IProgress<string> pText, IProgress<int> pValue)
+    /// <param name="mediator"></param>
+    /// <param name="pText"></param>
+    /// <param name="pValue"></param>
+    /// <param name="logger"></param>
+    public Core(ISimpleMediator mediator, IProgress<string> pText, IProgress<int> pValue, SimpleLogger logger)
     {
         _mediator = mediator;
         _pText = pText;
         _pValue = pValue;
+        _logger = logger;
         InputDirectory = RootPath;
         InitializeComponent();
     }
@@ -117,6 +169,7 @@ public class Core
     {
         // create directories
         CreateDirectories();
+        // refresh game profiles
         RefreshGameProfiles();
     }
 
@@ -172,41 +225,7 @@ public class Core
             return true;
         }
     }
-
-    /// <summary>
-    /// Tries to make a backup of a file.
-    /// </summary>
-    /// <param name="simpleBackup"></param>
-    /// <param name="filePath"></param>
-    /// <returns></returns>
-    private static DialogAnswer MakeBackup(string filePath, SimpleBackup simpleBackup)
-    {
-        do
-        {
-            if (TryToMakeBackup(filePath, simpleBackup)) return DialogAnswer.Continue;
-            // ask the user if they want to try again
-            var dialogResult = _mediator.Ask($"""Failed to backup the file: "{filePath}".{Environment.NewLine}The file cannot be found, or a file with the same name exists in the target location and is used by another program.{Environment.NewLine}Would you like to try again?""", "Failed to backup the file", QuestionOptions.AbortRetryIgnore, DialogType.Exclamation);
-            if (dialogResult == DialogAnswer.Retry) continue;
-            return dialogResult;
-        } while (true);
-
-        static bool TryToMakeBackup(string filePath, SimpleBackup simpleBackup)
-        {
-            try
-            {
-                simpleBackup.Backup(filePath);
-            }
-            catch { return false; }
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Opens the Backup directory
-    /// </summary>
-    public static void OpenBackupDirectory()
-        => IoHelpers.OpenDirectory(BackupPath);
-
+    
     /// <summary>
     /// Opens a game website in a default web browser.
     /// </summary>
@@ -236,8 +255,7 @@ public class Core
     /// Extracts SteamID from a directory path.
     /// </summary>
     /// <param name="directoryPath"></param>
-    /// <returns></returns>
-    public void ExtractSteamIdFromPathIfValid(string directoryPath)
+    private void ExtractSteamIdFromPathIfValid(string directoryPath)
     {
         var match = Regex.Match(directoryPath, PathPattern);
         if (match.Success) SetSteamId(match.Groups[1].Value, true);
@@ -250,12 +268,17 @@ public class Core
     public string InputDirectory { get; private set; }
 
     /// <summary>
-    /// Validates an <paramref name="inputPath"/> string and sets the <see cref="InputDirectory"/> property.
+    /// Validates a <paramref name="inputPath"/> string and sets the <see cref="InputDirectory"/> property.
     /// </summary>
     /// <param name="inputPath"></param>
     public void SetInputDirectory(string inputPath)
     {
         if (IsBusy) return;
+
+        // checking for forbidden directory
+        if (IsForbiddenDirectory(BackupPath)) return;
+        
+        // checking if directory exists
         var result = Directory.Exists(inputPath);
         if (result)
         {
@@ -263,6 +286,14 @@ public class Core
             ExtractSteamIdFromPathIfValid(inputPath);
         }
         ReportProgress(result ? "The entered Input Folder Path is correct." : "The entered Input Folder Path was invalid.", 0);
+        return;
+
+        bool IsForbiddenDirectory(string path)
+        {
+            if (!inputPath.Contains(path)) return false;
+            _mediator.Inform($"The entered path:\n\"{path}\", \ncannot be used as the Input Folder Path. \nThe path has not been updated.", "Forbidden directory", DialogType.Exclamation);
+            return true;
+        }
     }
 
     #endregion
@@ -282,6 +313,22 @@ public class Core
 
     private delegate void OperationDelegate(DsssAutoStrongFile dsssFile);
 
+    private enum OperationType
+    {
+        Encryption,
+        Decryption,
+        Resigning
+    }
+
+    public Task DecryptAllAsync()
+        => ProcessAsyncOperation(OperationType.Decryption, DecryptAll);
+
+    public Task EncryptAllAsync()
+        => ProcessAsyncOperation(OperationType.Encryption, EncryptAll);
+
+    public Task ResignAllAsync()
+        => ProcessAsyncOperation(OperationType.Resigning, ResignAll);
+
     private async Task ProcessAsyncOperation(OperationType operationType, OperationDelegate operationDelegate)
     {
         if (IsBusy) return;
@@ -289,11 +336,17 @@ public class Core
         _cts = new CancellationTokenSource();
         try
         {
+            _logger.Log(LogSeverity.Information, $"{operationType} has started. Selected game profile: {_gameProfile.GameTitle}.");
+            _logger.Log(LogSeverity.Information, $"Provided Steam32_ID: {SteamId}");
+            _logger.Log(LogSeverity.Information, "ID | FileName | MD5_Checksum | IsEncrypted | Steam32_ID");
             await AsyncOperation(operationType, operationDelegate);
+            _logger.Log(LogSeverity.Information, $"{operationType} complete.");
         }
         catch (OperationCanceledException)
         {
-            _pText.Report("The operation was aborted by the user.");
+            var message = $"{operationType} was interrupted by the user.";
+            _pText.Report(message);
+            _logger.Log(LogSeverity.Warning, message);
         }
         AbortOperation();
     }
@@ -302,11 +355,15 @@ public class Core
     {
         return Task.Run(() =>
         {
+            // check if input directory exists
             if (!DoesDirectoryExists(InputDirectory)) return;
+            
+            // get the paths of "*.bin" files located in the input directory
+            var files = Directory.GetFiles(InputDirectory, "*.bin", SearchOption.TopDirectoryOnly);
 
-            var processedFiles = 0;
-
-            var files = Directory.GetFiles(InputDirectory);
+            // initialize backup
+            SimpleBackup simpleBackup = new(BackupPath);
+            if (files.Length > 0) simpleBackup.NewBackup();
 
             ParallelOptions po = new()
             {
@@ -314,28 +371,52 @@ public class Core
                 MaxDegreeOfParallelism = Environment.ProcessorCount - 1
             };
 
-            // initialize backup
-            SimpleBackup simpleBackup = new(BackupPath);
-            if (files.Length > 0) simpleBackup.NewBackup();
-
+            var processedFiles = 0;
             var progress = 0;
             ReportProgress($"[{progress}/{files.Length}] Processing files...", progress);
+            
             Parallel.For((long)0, files.Length, po, ctr =>
             {
-                // load file
+                // try to load file
                 var dsssFile = new DsssAutoStrongFile(_deencryptor);
                 var result = dsssFile.SetFileData(files[ctr]);
-                Debug.Print(result.Result.ToString());
-                if (!result.Result) goto ORDER_66;
+                if (!result.Result)
+                {
+                    _logger.Log(LogSeverity.Error, $"I_{ctr} -> {result.Description}");
+                    goto ORDER_66;
+                }
+                
+                // check file integrity
+                result = dsssFile.DataHeader.CheckIntegrity(_deencryptor);
+                if (!result.Result)
+                {
+                    _logger.Log(LogSeverity.Error, $"I_{ctr} -> {result.Description}");
+                    goto ORDER_66;
+                }
+                
+                // log info about the input file
+                if (_logger is { IsEnabled: true, IsSilent: false }) 
+                    _logger.Log(LogSeverity.Information, $"I_{ctr} | {Path.GetFileName(files[ctr])} | {Md5HashFromFile(files[ctr])} | {dsssFile.IsEncrypted()} | {dsssFile.DataHeader.GetSteamId(_deencryptor)}");
 
-                // check whether the file is encrypted or decrypted
+                // check operation type and adjust to it
                 switch (operationType)
                 {
-                    case OperationType.Encryption:
-                        if (dsssFile.IsEncrypted()) goto ORDER_66;
+                    case OperationType.Resigning:
                         break;
                     case OperationType.Decryption:
-                        if (!dsssFile.IsEncrypted()) goto ORDER_66;
+                        if (!dsssFile.IsEncrypted())
+                        {
+                            _logger.Log(LogSeverity.Warning, $"I_{ctr} -> The file is already decrypted.");
+                            goto ORDER_66;
+                        }
+                        break;
+                    case OperationType.Encryption:
+                    default:
+                        if (dsssFile.IsEncrypted())
+                        {
+                            _logger.Log(LogSeverity.Warning, $"I_{ctr} -> The file is already encrypted.");
+                            goto ORDER_66;
+                        }
                         break;
                 }
                 
@@ -361,7 +442,6 @@ public class Core
                 // save file
                 var fileData = dsssFile.GetFileData();
                 var writeResult = WriteBytesToFile(files[ctr], fileData);
-                Debug.Print(writeResult.ToString());
                 switch (writeResult)
                 {
                     case DialogAnswer.Continue:
@@ -374,24 +454,28 @@ public class Core
                         goto ORDER_66;
                 }
 
-            ORDER_66:
+                // log info about the output file
+                if (_logger is { IsEnabled: true, IsSilent: false })
+                    _logger.Log(LogSeverity.Information, $"O_{ctr} | {Path.GetFileName(files[ctr])} | {Md5HashFromFile(files[ctr])} | {dsssFile.IsEncrypted()} | {dsssFile.DataHeader.GetSteamId(_deencryptor)}");
+
+                ORDER_66:
                 Interlocked.Increment(ref progress);
                 ReportProgress($"[{progress}/{files.Length}] Processing files...", (int)((double)progress / files.Length * 100));
             });
-            
             simpleBackup.FinalizeBackup();
 
-            ReportProgress($"{operationType} done. Number of processed files: {processedFiles}.", 100);
+            var message = $"{operationType} done. Number of processed files: {processedFiles}.";
+            _logger.Log(LogSeverity.Information, message);
+            ReportProgress(message, 100);
         });
     }
-    
-    private void DecryptAll(DsssAutoStrongFile dsssFile)
+    private static void DecryptAll(DsssAutoStrongFile dsssFile)
     {
         dsssFile.DecryptDataHeader();
         dsssFile.DecryptData();
     }
 
-    private void EncryptAll(DsssAutoStrongFile dsssFile)
+    private static void EncryptAll(DsssAutoStrongFile dsssFile)
     {
         dsssFile.EncryptDataHeader();
         dsssFile.EncryptData();
@@ -412,22 +496,6 @@ public class Core
             dsssFile.EncryptData();
         }
     }
-
-    private enum OperationType
-    {
-        Encryption,
-        Decryption,
-        Resigning
-    }
-
-    public async Task DecryptAllAsync()
-        => await ProcessAsyncOperation(OperationType.Decryption, DecryptAll);
-
-    public async Task EncryptAllAsync()
-        => await ProcessAsyncOperation(OperationType.Encryption, EncryptAll);
-
-    public async Task ResignAllAsync()
-        => await ProcessAsyncOperation(OperationType.Resigning, ResignAll);
-
+    
     #endregion
 }

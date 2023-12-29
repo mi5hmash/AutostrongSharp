@@ -88,12 +88,12 @@ public class DsssAutoStrongDataHeader
     }
 
     /// <summary>
-    /// Create a parameter-less <see cref="DsssHeader"/>.
+    /// Create a parameter-less <see cref="DsssAutoStrongHeader"/>.
     /// </summary>
     public DsssAutoStrongDataHeader() { }
 
     /// <summary>
-    /// Create a <see cref="DsssHeader"/> with given parameters.
+    /// Create a <see cref="DsssAutoStrongHeader"/> with given parameters.
     /// </summary>
     /// <param name="steam32Id"></param>
     /// <param name="unknown1"></param>
@@ -112,7 +112,7 @@ public class DsssAutoStrongDataHeader
     }
 
     /// <summary>
-    /// Decrypts Data Header.
+    /// Decrypts <see cref="DsssAutoStrongDataHeader"/>.
     /// </summary>
     public void DecryptData(AutoStrongDeencryptor dsssDeencryptor)
     {
@@ -123,7 +123,7 @@ public class DsssAutoStrongDataHeader
     }
 
     /// <summary>
-    /// Decrypts Data Header.
+    /// Encrypts <see cref="DsssAutoStrongDataHeader"/>.
     /// </summary>
     public void EncryptData(AutoStrongDeencryptor dsssDeencryptor)
     {
@@ -138,4 +138,31 @@ public class DsssAutoStrongDataHeader
     /// </summary>
     /// <returns></returns>
     public bool IsEncrypted() => FileFormat1 != 0x5353_5344 || FileFormat2 != 0x5353_5344;
+
+    /// <summary>
+    /// Gets decrypted <see cref="Steam32Id"/>.
+    /// </summary>
+    /// <param name="dsssDeencryptor"></param>
+    /// <returns></returns>
+    public uint GetSteamId(AutoStrongDeencryptor dsssDeencryptor)
+    {
+        var sid = _steam32Id;
+        var unk = _unknown1;
+        if (IsEncrypted()) dsssDeencryptor.Decrypt(ref sid, ref unk);
+        return sid;
+    }
+
+    /// <summary>
+    /// Returns false if file is not supported.
+    /// </summary>
+    /// <param name="dsssDeencryptor"></param>
+    /// <returns></returns>
+    public BoolResult CheckIntegrity(AutoStrongDeencryptor dsssDeencryptor)
+    {
+        var ff1 = _fileFormat1;
+        var ff2 = _fileFormat2;
+        if (IsEncrypted()) dsssDeencryptor.Decrypt(ref ff1, ref ff2);
+        if (ff1 != 0x5353_5344 || ff2 != 0x5353_5344) return new BoolResult(false, "File is not compatible with the selected game profile.");
+        return new BoolResult(true);
+    }
 }

@@ -8,9 +8,7 @@ namespace AutostrongSharp.Helpers
         /// <summary>
         /// Default constructor.
         /// </summary>
-        public SimpleMediatorWinForms()
-        {
-        }
+        public SimpleMediatorWinForms() { }
 
         /// <summary>
         /// Translates <see cref="ISimpleMediator.QuestionOptions"/> to <see cref="MessageBoxButtons"/>

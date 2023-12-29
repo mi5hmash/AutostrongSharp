@@ -1,5 +1,8 @@
+using System.Media;
 using AutostrongSharp.Helpers;
 using AutostrongSharpCore;
+using AutostrongSharpCore.Helpers;
+using static AutostrongSharpCore.Helpers.SimpleLogger;
 
 namespace AutostrongSharp;
 
@@ -12,7 +15,13 @@ public partial class Form1 : Form
         var mediator = new SimpleMediatorWinForms();
         var pText = new Progress<string>(s => toolStripStatusLabel1.Text = s);
         var pValue = new Progress<int>(i => toolStripProgressBar1.Value = i);
-        _programCore = new Core(mediator, pText, pValue);
+        _programCore = new Core(mediator, pText, pValue, new SimpleLogger(new SimpleLoggerOptions(AppInfo.RootPath)
+        {
+            MaxLogFiles = 1,
+            MinSeverityLevel = LogSeverity.Information,
+            LoggedAppName = $"{AppInfo.Title} v{AppInfo.Version}"
+        }));
+        _programCore.ActivateLogger();
 
         InitializeComponent();
     }
@@ -20,15 +29,17 @@ public partial class Form1 : Form
     private void Form1_Load(object sender, EventArgs e)
     {
         // set controls
+        versionLabel.Text = $@"v{AppInfo.Version}";
+        authorLabel.Text = $@"{AppInfo.Author} 2024";
         TBFilepath.Text = AppInfo.RootPath;
         TBSteamId.Text = @"0";
         backupCheckBox.Checked = _programCore.BackupEnabled;
-        versionLabel.Text = $@"v{AppInfo.Version}";
-        authorLabel.Text = $@"{AppInfo.Author} 2023";
 
         // transparent picture hack
         pb_AppIcon.Controls.Add(pb_GameProfileIcon);
         pb_GameProfileIcon.Location = new Point(0, pb_AppIcon.Height - pb_GameProfileIcon.Height);
+
+        // populate the GameProfile ComboBox
         PopulateGameProfileComboBox();
     }
 
@@ -146,6 +157,10 @@ public partial class Form1 : Form
         ButtonAbort.Visible = true;
         await operationDelegate();
         ButtonAbort.Visible = false;
+        
+        // play sound
+        SoundPlayer sp = new(Properties.Resources.typewritter_machine);
+        sp.Play();
     }
 
     private async void ButtonDecryptAll_Click(object sender, EventArgs e)
@@ -158,5 +173,4 @@ public partial class Form1 : Form
         => await ProcessAsyncOperation(_programCore.ResignAllAsync);
 
     #endregion
-
 }

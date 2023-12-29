@@ -113,7 +113,7 @@
             // toolStripProgressBar1
             // 
             toolStripProgressBar1.Name = "toolStripProgressBar1";
-            toolStripProgressBar1.Size = new Size(70, 16);
+            toolStripProgressBar1.Size = new Size(60, 16);
             toolStripProgressBar1.Step = 5;
             toolStripProgressBar1.Style = ProgressBarStyle.Continuous;
             // 

@@ -6,37 +6,37 @@ namespace AutostrongSharpCore.Models.DSSS.AutoStrong;
 public class DsssAutoStrongFile
 {
     /// <summary>
-    /// Header of DSSS file.
+    /// Header of the <see cref="DsssAutoStrongFile"/>.
     /// </summary>
-    public DsssHeader Header { get; set; } = new();
+    public DsssAutoStrongHeader AutoStrongHeader { get; set; } = new();
 
     /// <summary>
-    /// Data Header of DSSS file.
+    /// DataHeader of the <see cref="DsssAutoStrongFile"/>.
     /// </summary>
     public DsssAutoStrongDataHeader DataHeader { get; set; } = new();
 
     /// <summary>
-    /// Data of DSSS file.
+    /// Data of the <see cref="DsssAutoStrongFile"/>.
     /// </summary>
     public uint[] Data { get; set; } = [];
 
     /// <summary>
-    /// Footer of DSSS file.
+    /// Footer of the <see cref="DsssAutoStrongFile"/>.
     /// </summary>
-    public DsssFooter Footer { get; set; } = new();
+    public DsssAutoStrongFooter AutoStrongFooter { get; set; } = new();
     
     /// <summary>
-    /// Hashes needed to calculate checksum.
+    /// Hashes needed to calculate the file checksum.
     /// </summary>
     private static uint[] Hashes { get; set; } = [];
 
     /// <summary>
-    /// Dencryptor instance.
+    /// Deencryptor instance.
     /// </summary>
     public AutoStrongDeencryptor Deencryptor { get; set; }
 
     /// <summary>
-    /// Create an empty DsssAutoStrongFile class.
+    /// Creates an empty <see cref="DsssAutoStrongFile"/> class.
     /// </summary>
     /// <param name="deencryptor"></param>
     public DsssAutoStrongFile(AutoStrongDeencryptor deencryptor)
@@ -46,7 +46,7 @@ public class DsssAutoStrongFile
     }
 
     /// <summary>
-    /// Load a '*.bin' archive of DsssAutoStrong type into the existing object.
+    /// Loads a '*.bin' archive of <see cref="DsssAutoStrongFile"/> type into the existing object.
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
@@ -62,12 +62,12 @@ public class DsssAutoStrongFile
         using BinReader br = new(fs);
         try
         {
-            // try to load header data into the Header
-            Header = br.ReadStruct<DsssHeader>() ?? throw new NullReferenceException();
+            // try to load header data into the AutoStrongHeader
+            AutoStrongHeader = br.ReadStruct<DsssAutoStrongHeader>() ?? throw new NullReferenceException();
         }
         catch { return new BoolResult(false, "Couldn't load the file. Invalid file header structure."); }
 
-        var test = Header.CheckIntegrity();
+        var test = AutoStrongHeader.CheckIntegrity();
         if (!test.Result) return new BoolResult(test.Result, $"Couldn't load the file. {test.Description}");
 
         try
@@ -77,10 +77,10 @@ public class DsssAutoStrongFile
         }
         catch { return new BoolResult(false, "Couldn't load the file. Invalid file data header structure."); }
 
-        test = Header.CheckIntegrity();
+        test = AutoStrongHeader.CheckIntegrity();
         if (!test.Result) return new BoolResult(test.Result, $"Couldn't load the file. {test.Description}");
 
-        var dataLength = fs.Length - (Marshal.SizeOf<DsssHeader>() + Marshal.SizeOf<DsssAutoStrongDataHeader>() + Marshal.SizeOf<DsssFooter>());
+        var dataLength = fs.Length - (Marshal.SizeOf<DsssAutoStrongHeader>() + Marshal.SizeOf<DsssAutoStrongDataHeader>() + Marshal.SizeOf<DsssAutoStrongFooter>());
         var dataSize = dataLength / Marshal.SizeOf<uint>();
 
         // load data
@@ -92,8 +92,8 @@ public class DsssAutoStrongFile
 
         try
         {
-            // try to load footer data into the Footer
-            Footer = br.ReadStruct<DsssFooter>() ?? throw new NullReferenceException();
+            // try to load footer data into the AutoStrongFooter
+            AutoStrongFooter = br.ReadStruct<DsssAutoStrongFooter>() ?? throw new NullReferenceException();
         }
         catch { return new BoolResult(false, "Couldn't load the file. Invalid file footer structure."); }
 
@@ -101,7 +101,7 @@ public class DsssAutoStrongFile
     }
 
     /// <summary>
-    /// Get an existing object of a DsssAutoStrong type as byte array.
+    /// Get an existing object of a <see cref="DsssAutoStrongFile"/> type as byte array.
     /// </summary>
     /// <returns></returns>
     public Span<byte> GetFileData()
@@ -109,13 +109,13 @@ public class DsssAutoStrongFile
         using MemoryStream ms = new();
         using BinWriter bw = new(ms);
         // write DSSS HEADER content
-        bw.WriteStruct(Header);
+        bw.WriteStruct(AutoStrongHeader);
         // write DSSS DATA HEADER content
         bw.WriteStruct(DataHeader);
         // write DSSS DATA content
         foreach (var data in Data) bw.Write(data);
         // write DSSS FOOTER content
-        bw.WriteStruct(Footer);
+        bw.WriteStruct(AutoStrongFooter);
 
         var dataAsBytes = ms.ToArray().AsSpan();
         var dataAsInts = MemoryMarshal.Cast<byte, uint>(dataAsBytes[..(dataAsBytes.Length / sizeof(uint) * sizeof(uint))]);
@@ -128,23 +128,23 @@ public class DsssAutoStrongFile
     }
 
     /// <summary>
-    /// Decrypts Data Header.
+    /// Decrypts the <see cref="DataHeader"/>.
     /// </summary>
     public void DecryptDataHeader() => DataHeader.DecryptData(Deencryptor);
 
     /// <summary>
-    /// Encrypts Data Header.
+    /// Encrypts the <see cref="DataHeader"/>.
     /// </summary>
     public void EncryptDataHeader() => DataHeader.EncryptData(Deencryptor);
 
     /// <summary>
-    /// Returns true if file is Encrypted.
+    /// Returns true if the <see cref="DataHeader"/> is Encrypted.
     /// </summary>
     /// <returns></returns>
     public bool IsEncrypted() => DataHeader.IsEncrypted();
 
     /// <summary>
-    /// Decrypts Data.
+    /// Decrypts <see cref="Data"/>.
     /// </summary>
     public void DecryptData()
     {
@@ -163,7 +163,7 @@ public class DsssAutoStrongFile
     }
 
     /// <summary>
-    /// Encrypts Data.
+    /// Encrypts <see cref="Data"/>.
     /// </summary>
     public void EncryptData()
     {

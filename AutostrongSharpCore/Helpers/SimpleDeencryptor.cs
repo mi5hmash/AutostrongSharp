@@ -56,7 +56,7 @@ public static class SimpleDeencryptor
     }
 
     /// <summary>
-    /// Compresses <see cref="bytes"/> with GZip.
+    /// Compresses <paramref name="bytes"/> with GZip.
     /// </summary>
     /// <param name="bytes"></param>
     /// <returns></returns>
@@ -71,7 +71,7 @@ public static class SimpleDeencryptor
     }
 
     /// <summary>
-    /// Decompresses <see cref="bytes"/> with GZip.
+    /// Decompresses <paramref name="bytes"/> with GZip.
     /// </summary>
     /// <param name="bytes"></param>
     /// <returns></returns>
@@ -87,7 +87,7 @@ public static class SimpleDeencryptor
     }
 
     /// <summary>
-    /// Compresses <see cref="bytes"/> with Brotli.
+    /// Compresses <paramref name="bytes"/> with Brotli.
     /// </summary>
     /// <param name="bytes"></param>
     /// <returns></returns>
@@ -102,7 +102,7 @@ public static class SimpleDeencryptor
     }
 
     /// <summary>
-    /// Decompresses <see cref="bytes"/> with Brotli.
+    /// Decompresses <paramref name="bytes"/> with Brotli.
     /// </summary>
     /// <param name="bytes"></param>
     /// <returns></returns>

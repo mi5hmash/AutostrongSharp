@@ -9,14 +9,13 @@ public class SimpleBackup
     private readonly string _backupRootDirectory;
     private readonly string _backupFolderNamePrefix;
     private readonly bool _zipBackups;
-    private uint _backupFilesCount;
     private bool _isFinalized = true;
 
     /// <summary>
     /// A directory of a current backup.
     /// </summary>
     public string CurrentBackupDirectory { get; private set; }
-
+    
     /// <summary>
     /// Default constructor.
     /// </summary>
@@ -28,14 +27,24 @@ public class SimpleBackup
     {
         _backupRootDirectory = backupRootDirectory;
         _maxBackups = maxBackups;
-        _backupFolderNamePrefix = $"{backupFolderNamePrefix}_";
+        _backupFolderNamePrefix = backupFolderNamePrefix;
         _zipBackups = zipBackups;
-        CurrentBackupDirectory = NewBackupDir();
+        CurrentBackupDirectory = NewBackupPath();
     }
 
-    private string NewBackupDir() 
-        => Path.Combine(_backupRootDirectory, $"{_backupFolderNamePrefix}{DateTime.Now:yyyyMMddHHmmssfff}");
-    
+    /// <summary>
+    /// Combines a path to a new backup folder. 
+    /// </summary>
+    /// <returns></returns>
+    private string NewBackupPath() 
+        => Path.Combine(_backupRootDirectory, $"{_backupFolderNamePrefix}_{DateTime.Now:yyyyMMddHHmmssfff}");
+
+    /// <summary>
+    /// Deletes the current backup.
+    /// </summary>
+    private void DeleteCurrentBackup()
+        => SafelyDeleteDirectory(CurrentBackupDirectory);
+
     /// <summary>
     /// Creates a folder for a new backup.
     /// </summary>
@@ -44,20 +53,38 @@ public class SimpleBackup
         if (_zipBackups)
         {
             var backups = Directory.GetFiles(_backupRootDirectory, "*.zip", SearchOption.TopDirectoryOnly)
-                .Where(folderPath => Path.GetFileName(folderPath).StartsWith(_backupFolderNamePrefix, StringComparison.OrdinalIgnoreCase)).OrderDescending().ToList();
-            // delete the oldest backup if the backup limit is reached
-            if (backups.Count >= _maxBackups) SafelyDeleteFile(backups.Last()); 
+                .Where(filePath => Path.GetFileName(filePath).StartsWith(_backupFolderNamePrefix, StringComparison.OrdinalIgnoreCase)).OrderDescending().ToList();
+            // delete the oldest backup(s) if the backup limit is reached
+            var limitOverflow = backups.Count - _maxBackups;
+            switch (limitOverflow)
+            {
+                case 0:
+                    SafelyDeleteFile(backups.Last());
+                    break;
+                case > 0:
+                    SafelyDeleteFile(backups.TakeLast(limitOverflow).ToArray());
+                    break;
+            }
         }
         else
         {
             var backupDirs = Directory.GetDirectories(_backupRootDirectory)
                 .Where(folderPath => Path.GetFileName(folderPath).StartsWith(_backupFolderNamePrefix, StringComparison.OrdinalIgnoreCase)).OrderDescending().ToList();
-            // delete the oldest backup if the backup limit is reached
-            if (backupDirs.Count >= _maxBackups) SafelyDeleteDirectory(backupDirs.Last());
+            // delete the oldest backup(s) if the backup limit is reached
+            var limitOverflow = backupDirs.Count - _maxBackups;
+            switch (limitOverflow)
+            {
+                case 0:
+                    SafelyDeleteDirectory(backupDirs.Last());
+                    break;
+                case > 0:
+                    SafelyDeleteDirectory(backupDirs.TakeLast(limitOverflow).ToArray());
+                    break;
+            }
         }
 
-        CurrentBackupDirectory = NewBackupDir();
-        Directory.CreateDirectory(CurrentBackupDirectory);
+        CurrentBackupDirectory = NewBackupPath();
+        RecreateDirectory(CurrentBackupDirectory);
 
         _isFinalized = false;
     }
@@ -71,7 +98,6 @@ public class SimpleBackup
     {
         if (!File.Exists(filePath) || _isFinalized) return false;
         File.Copy(filePath, Path.Combine(CurrentBackupDirectory, Path.GetFileName(filePath)));
-        _backupFilesCount++;
         return true;
     }
     /// <summary>
@@ -87,20 +113,17 @@ public class SimpleBackup
 
         return results;
     }
-
-    /// <summary>
-    /// Deletes the current backup.
-    /// </summary>
-    private void DeleteCurrentBackup() => Directory.Delete(CurrentBackupDirectory, true);
-
-
+    
     /// <summary>
     /// Finalizes backup and packs it into a zip file if <see cref="_zipBackups"/> flag is true.
     /// </summary>
     public void FinalizeBackup()
     {
+        // check if directory exist or if backup is finalized
         if (!Directory.Exists(CurrentBackupDirectory) || _isFinalized) return;
-        if (_backupFilesCount > 0)
+        
+        var files = Directory.GetFiles(CurrentBackupDirectory);
+        if (files.Length > 0)
         {
             if (_zipBackups)
             {
