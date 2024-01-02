@@ -11,7 +11,7 @@ This application can **decrypt and encrypt save files** from various games runni
 |---------------------------|---------|----------------|----------|
 | Devil May Cry 5           | 601150  | 11025947       | PC       |
 | Resident Evil 2 Remake    | 883710  | 11636119       | PC       |
-| Resident Evil 3 Remake    | 952060  | 11026988       | PC       |
+| Resident Evil 3 Remake    | 952060  | 11960962       | PC       |
 | Resident Evil 7 Biohazard | 418370  | 11026049       | PC       |
 | Resident Evil 8 Village   | 1196590 | 11260452       | PC       |
 
@@ -21,11 +21,15 @@ This application can **decrypt and encrypt save files** from various games runni
 I wanted to share my SaveData files with a friend, but they were not compatible.
 
 # :scream: Is it safe?
-**No.** You can corrupt your SaveData files and lose your progress or get banned from playing online if you unreasonably modify your save.
+**No.** 
+> [!CAUTION]
+> You can corrupt your SaveData files and lose your progress or get banned from playing online if you unreasonably modify your save.
 
-Remember to always make a backup of the files that you want to edit, before modifying them.
+> [!IMPORTANT]
+> Remember to always make a backup of the files that you want to edit, before modifying them.
 
-Also, disable the Steam Cloud before you replace any SaveData files.
+> [!IMPORTANT]
+> Disable the Steam Cloud before you replace any SaveData files.
 
 You have been warned and now you can move on to the next chapter, fully aware of possible consequences.
 
@@ -34,18 +38,48 @@ You have been warned and now you can move on to the next chapter, fully aware of
 <img src="https://github.com/mi5hmash/AutostrongSharp/blob/main/.resources/images/MainWindow.png" alt="MainWindow"/>
 
 ## Setting the Input Directory
-There are three ways to achieve this. The first one is to drop the SaveData file or folder it is in on a TextBox **(1)** or a button **(2)**. Alternatively, you may use button **(2)** to open a folder picker and navigate to the directory from it. Also, you can type in the directory path into the text box **(1)**.
+There are three ways to achieve this. The first one is to drop the SaveData file or folder it is in on a TextBox **(1)** or a button **(2)**. Alternatively, you may use button **(2)** to open a folder picker and navigate to the directory from it. Also, you can type in the directory path into the TextBox **(1)**.
 
-> **Note:** The program will extract the Steam32_ID from the "Input Folder Path" TextBox **(1)**, if it ends with *"<steam_id>\\<steam_appid>\remote\win64_save"*, and will fill the TextBox **(3)** for you.
+> [!TIP]
+> The program will extract the Steam32_ID from the "Input Folder Path" TextBox **(1)**, if it ends with *"<steam_id>\\<steam_appid>\remote\win64_save"*, and will fill the TextBox **(3)** for you.
 
-## Decrypting files
-Select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Decrypt All"** button **(7)**.
+## About Steam32 ID
+It is a 32-bit representation of your 64-bit SteamID.
 
-## Encrypting files
-Select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Encrypt All"** button **(8)**.
+##### Example:
+| 64-bit SteamID    | 32-bit SteamID |
+|-------------------|----------------|
+| 76561197960265729 | 1              |
+
+> [!NOTE]
+> Steam32 ID is also known as AccountID or Friend Code. 
+
+> [!TIP]
+You can use the calculator on [steamdb.info](https://steamdb.info/calculator/) to find your SteamID.
 
 ## Resigning files
-If you just want to resign your SaveData files to use them on another Steam Account then type in the Steam32_ID of that Steam Account into a TextBox **(3)**. You can use [this site](https://www.steamidfinder.com) to find it. Once you have it typed in, select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Resign All"** button **(9)**.
+If you just want to resign your SaveData files to use them on another Steam Account then type in the Steam32_ID of that Steam Account into a TextBox **(3)**. Once you have it typed in, select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Resign All"** button **(10)**.
+
+## Enabling SuperUser Mode
+
+> [!WARNING]
+> This mode is for advanced users only.
+
+If you really need it, you can enable SuperUser Mode by quickly clicking the version number label **(11)**, three times.
+
+## Decrypting files
+
+> [!IMPORTANT]  
+> This button is visible only when the SuperUser Mode is Enabled. 
+
+If you want to decrypt SaveData file\s to read its content, select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Decrypt All"** button **(7)**.
+
+## Encrypting files
+
+> [!IMPORTANT]  
+> This button is visible only when the SuperUser Mode is Enabled. 
+
+If you want to encrypt the decrypted SaveData file\s, select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Encrypt All"** button **(8)**.
 
 ## Backup functionality
 By default, the backup option is checked **(5)**. In this state, the application will back up files before each operation to the the new folder inside the ***"AutostrongSharp/_BACKUP/"*** directory. Application can create up to 3 zip archives.
@@ -54,12 +88,16 @@ By default, the backup option is checked **(5)**. In this state, the application
 You can open the ***"AutostrongSharp/_BACKUP/"*** directory in a new Explorer window by using the button **(6)**.
 
 ## Other buttons
-Button **(10)** cancels the currently running operation.
+Button **(9)** cancels the currently running operation.
 
 # :fire: Issues
 All the problems I've encountered during my tests have been fixed on the go. If you find any other issue (hope you won't) then please, feel free to report it [there](https://github.com/mi5hmash/AutostrongSharp/issues).
 
-**IF YOU DO NOT SEE SAVEDATA FILES THAT YOU HAVE RESIGNED THEN PLEASE, READ <a href="https://github.com/mi5hmash/AutostrongSharp/tree/main/.resources/Save%20Files" target="_blank">THIS DOCUMENT</a>.**
+> [!TIP]
+> This application creates a log file that may be helpful in troubleshooting.  
+It can be found in the same directory as the executable file.
+
+**IF YOU DO NOT SEE SAVEDATA FILES THAT YOU HAVE RESIGNED, IN THE GAME MENU, THEN PLEASE, READ <a href="https://github.com/mi5hmash/AutostrongSharp/tree/main/.resources/Save%20Files" target="_blank">THIS DOCUMENT</a>.**
 
 # :star: Sources
 * https://github.com/tremwil/DS3SaveUnpacker
