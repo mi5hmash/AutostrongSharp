@@ -41,8 +41,8 @@
             LabelSteamId = new Label();
             LabelFilepath = new Label();
             pb_AppIcon = new PictureBox();
-            ButtonPackAll = new Button();
-            ButtonUnpackAll = new Button();
+            ButtonEncryptAll = new Button();
+            ButtonDecryptAll = new Button();
             TBFilepath = new TextBox();
             folderBrowserDialog1 = new FolderBrowserDialog();
             TBSteamId = new TextBox();
@@ -52,6 +52,7 @@
             toolTip1 = new ToolTip(components);
             ButtonOpenBackupDir = new Button();
             backupCheckBox = new CheckBox();
+            superUserTimer = new System.Windows.Forms.Timer(components);
             statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pb_AppIcon).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pb_GameProfileIcon).BeginInit();
@@ -61,7 +62,7 @@
             // 
             ButtonAbort.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
             ButtonAbort.ForeColor = Color.Brown;
-            ButtonAbort.Location = new Point(295, 124);
+            ButtonAbort.Location = new Point(211, 124);
             ButtonAbort.Name = "ButtonAbort";
             ButtonAbort.Size = new Size(55, 23);
             ButtonAbort.TabIndex = 10;
@@ -92,7 +93,7 @@
             authorLabel.Name = "authorLabel";
             authorLabel.Size = new Size(75, 12);
             authorLabel.TabIndex = 35;
-            authorLabel.Text = "Mi5hmasH 2023";
+            authorLabel.Text = "Mi5hmasH 2024";
             // 
             // versionLabel
             // 
@@ -101,8 +102,10 @@
             versionLabel.Name = "versionLabel";
             versionLabel.Size = new Size(46, 15);
             versionLabel.TabIndex = 34;
-            versionLabel.Text = "v1.1.0.0";
+            versionLabel.Text = "v1.2.1.0";
             versionLabel.TextAlign = ContentAlignment.MiddleRight;
+            versionLabel.Click += VersionLabel_Click;
+            versionLabel.DoubleClick += VersionLabel_Click;
             // 
             // toolStripStatusLabel1
             // 
@@ -130,7 +133,7 @@
             // ButtonResignAll
             // 
             ButtonResignAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
-            ButtonResignAll.Location = new Point(200, 124);
+            ButtonResignAll.Location = new Point(281, 124);
             ButtonResignAll.Name = "ButtonResignAll";
             ButtonResignAll.Size = new Size(89, 23);
             ButtonResignAll.TabIndex = 9;
@@ -166,27 +169,29 @@
             pb_AppIcon.TabIndex = 20;
             pb_AppIcon.TabStop = false;
             // 
-            // ButtonPackAll
+            // ButtonEncryptAll
             // 
-            ButtonPackAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
-            ButtonPackAll.Location = new Point(104, 124);
-            ButtonPackAll.Name = "ButtonPackAll";
-            ButtonPackAll.Size = new Size(89, 23);
-            ButtonPackAll.TabIndex = 8;
-            ButtonPackAll.Text = "ENCRYPT ALL";
-            ButtonPackAll.UseVisualStyleBackColor = true;
-            ButtonPackAll.Click += ButtonEncryptAll_Click;
+            ButtonEncryptAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            ButtonEncryptAll.Location = new Point(107, 124);
+            ButtonEncryptAll.Name = "ButtonEncryptAll";
+            ButtonEncryptAll.Size = new Size(89, 23);
+            ButtonEncryptAll.TabIndex = 8;
+            ButtonEncryptAll.Text = "ENCRYPT ALL";
+            ButtonEncryptAll.UseVisualStyleBackColor = true;
+            ButtonEncryptAll.Visible = false;
+            ButtonEncryptAll.Click += ButtonEncryptAll_Click;
             // 
-            // ButtonUnpackAll
+            // ButtonDecryptAll
             // 
-            ButtonUnpackAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
-            ButtonUnpackAll.Location = new Point(12, 124);
-            ButtonUnpackAll.Name = "ButtonUnpackAll";
-            ButtonUnpackAll.Size = new Size(89, 23);
-            ButtonUnpackAll.TabIndex = 7;
-            ButtonUnpackAll.Text = "DECRYPT ALL";
-            ButtonUnpackAll.UseVisualStyleBackColor = true;
-            ButtonUnpackAll.Click += ButtonDecryptAll_Click;
+            ButtonDecryptAll.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold);
+            ButtonDecryptAll.Location = new Point(12, 124);
+            ButtonDecryptAll.Name = "ButtonDecryptAll";
+            ButtonDecryptAll.Size = new Size(89, 23);
+            ButtonDecryptAll.TabIndex = 7;
+            ButtonDecryptAll.Text = "DECRYPT ALL";
+            ButtonDecryptAll.UseVisualStyleBackColor = true;
+            ButtonDecryptAll.Visible = false;
+            ButtonDecryptAll.Click += ButtonDecryptAll_Click;
             // 
             // TBFilepath
             // 
@@ -265,6 +270,11 @@
             backupCheckBox.UseVisualStyleBackColor = true;
             backupCheckBox.CheckedChanged += BackupCheckBox_CheckedChanged;
             // 
+            // superUserTimer
+            // 
+            superUserTimer.Interval = 500;
+            superUserTimer.Tick += SuperUserTimer_Tick;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -283,8 +293,8 @@
             Controls.Add(LabelSteamId);
             Controls.Add(LabelFilepath);
             Controls.Add(pb_AppIcon);
-            Controls.Add(ButtonPackAll);
-            Controls.Add(ButtonUnpackAll);
+            Controls.Add(ButtonEncryptAll);
+            Controls.Add(ButtonDecryptAll);
             Controls.Add(ButtonSelectDir);
             Controls.Add(TBFilepath);
             Controls.Add(TBSteamId);
@@ -314,8 +324,8 @@
         private Label LabelSteamId;
         private Label LabelFilepath;
         private PictureBox pb_AppIcon;
-        private Button ButtonPackAll;
-        private Button ButtonUnpackAll;
+        private Button ButtonEncryptAll;
+        private Button ButtonDecryptAll;
         private TextBox TBFilepath;
         private FolderBrowserDialog folderBrowserDialog1;
         private TextBox TBSteamId;
@@ -325,5 +335,6 @@
         private ToolTip toolTip1;
         private CheckBox backupCheckBox;
         private Button ButtonOpenBackupDir;
+        private System.Windows.Forms.Timer superUserTimer;
     }
 }

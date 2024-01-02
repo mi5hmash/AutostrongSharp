@@ -8,6 +8,7 @@ namespace AutostrongSharp;
 
 public partial class Form1 : Form
 {
+    // Program Core
     private readonly Core _programCore;
 
     public Form1()
@@ -42,6 +43,43 @@ public partial class Form1 : Form
         // populate the GameProfile ComboBox
         PopulateGameProfileComboBox();
     }
+
+    #region SUPER_USER
+
+    // Super User
+    private const int SuperUserThreshold = 3;
+    private bool _isSuperUser;
+    private int _superUserClicks;
+
+    private void VersionLabel_Click(object sender, EventArgs e)
+    {
+        if (_isSuperUser) return;
+
+        _superUserClicks += 1;
+
+        if (_superUserClicks >= SuperUserThreshold) return;
+
+        // restart superUserTimer
+        superUserTimer.Stop();
+        superUserTimer.Start();
+    }
+
+    private void SuperUserTimer_Tick(object sender, EventArgs e)
+    {
+        superUserTimer.Stop();
+        if (_superUserClicks >= SuperUserThreshold) EnableSuperUser();
+        _superUserClicks = 0;
+    }
+
+    private void EnableSuperUser()
+    {
+        _isSuperUser = true;
+        ButtonEncryptAll.Visible = true;
+        ButtonDecryptAll.Visible = true;
+        SystemSounds.Beep.Play();
+    }
+
+    #endregion
 
     #region GAME_PROFILE
 
@@ -157,7 +195,7 @@ public partial class Form1 : Form
         ButtonAbort.Visible = true;
         await operationDelegate();
         ButtonAbort.Visible = false;
-        
+
         // play sound
         SoundPlayer sp = new(Properties.Resources.typewritter_machine);
         sp.Play();
@@ -173,4 +211,5 @@ public partial class Form1 : Form
         => await ProcessAsyncOperation(_programCore.ResignAllAsync);
 
     #endregion
+
 }
