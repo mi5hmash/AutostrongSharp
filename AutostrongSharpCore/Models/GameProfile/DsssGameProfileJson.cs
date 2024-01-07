@@ -1,16 +1,21 @@
-﻿namespace AutostrongSharpCore.Models;
+﻿namespace AutostrongSharpCore.Models.GameProfile;
 
 public class DsssGameProfileJson
 {
     /// <summary>
-    /// The title of a game.
+    /// Game Profile type.
     /// </summary>
-    public string? GameTitle { get; set; }
+    public string? GpType { get; set; }
 
     /// <summary>
     /// Game Profile version.
     /// </summary>
     public uint? GpVersion { get; set; }
+
+    /// <summary>
+    /// The title of a game.
+    /// </summary>
+    public string? GameTitle { get; set; }
 
     /// <summary>
     /// Steam AppID.
@@ -38,7 +43,7 @@ public class DsssGameProfileJson
     public uint? Platform { get; set; }
 
     /// <summary>
-    /// Default Constructor that loads configuration.
+    /// Default Constructor that loads the configuration.
     /// </summary>
     public DsssGameProfileJson()
     {
@@ -48,11 +53,11 @@ public class DsssGameProfileJson
     /// <summary>
     /// Constructor with parameters.
     /// </summary>
-    /// <param name="gameTitle"></param>
+    /// <param name="gpType"></param>
     /// <param name="gpVersion"></param>
-    public DsssGameProfileJson(string gameTitle, uint gpVersion)
+    public DsssGameProfileJson(string gpType, uint gpVersion)
     {
-        GameTitle = gameTitle;
+        GpType = gpType;
         GpVersion = gpVersion;
     }
 }

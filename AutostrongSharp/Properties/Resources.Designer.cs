@@ -63,9 +63,10 @@ namespace AutostrongSharp.Properties {
         /// <summary>
         ///   Wyszukuje zlokalizowany zasób typu System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap logo {
+        internal static System.Drawing.Bitmap Autostrong_Sharp_Icon_x256
+        {
             get {
-                object obj = ResourceManager.GetObject("logo", resourceCulture);
+                object obj = ResourceManager.GetObject("Autostrong_Sharp_Icon_x256", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

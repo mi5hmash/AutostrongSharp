@@ -85,7 +85,7 @@ public partial class Form1 : Form
 
     private void PopulateGameProfileComboBox()
     {
-        comboBoxGameProfile.DataSource = _programCore.GameProfileFiles;
+        comboBoxGameProfile.DataSource = _programCore.GetGameProfileFileList();
         comboBoxGameProfile.DisplayMember = "Name";
     }
 
@@ -95,7 +95,7 @@ public partial class Form1 : Form
         _programCore.SetNewGameProfile(comboBoxGameProfile.SelectedIndex);
         SetGameProfileIcon();
         comboBox.SelectedIndexChanged -= ComboBoxGameProfile_SelectedIndexChanged!;
-        comboBox.SelectedIndex = _programCore.GameProfileIndex;
+        comboBox.SelectedIndex = _programCore.GetSelectedGameProfileFileIndex();
         comboBox.SelectedIndexChanged += ComboBoxGameProfile_SelectedIndexChanged!;
     }
 
@@ -183,6 +183,9 @@ public partial class Form1 : Form
 
     #region OPERATIONS
 
+    private void AuthorLabel_Click(object sender, EventArgs e)
+        => AppInfo.VisitAuthorsGithub();
+
     private void ButtonAbort_Click(object sender, EventArgs e)
         => _programCore.AbortOperation();
 
@@ -211,5 +214,5 @@ public partial class Form1 : Form
         => await ProcessAsyncOperation(_programCore.ResignAllAsync);
 
     #endregion
-
+    
 }

@@ -88,12 +88,15 @@
             // authorLabel
             // 
             authorLabel.AutoSize = true;
+            authorLabel.Cursor = Cursors.Hand;
             authorLabel.Font = new Font("Segoe UI", 7F);
             authorLabel.Location = new Point(423, 143);
             authorLabel.Name = "authorLabel";
             authorLabel.Size = new Size(75, 12);
             authorLabel.TabIndex = 35;
             authorLabel.Text = "Mi5hmasH 2024";
+            authorLabel.TextAlign = ContentAlignment.MiddleRight;
+            authorLabel.Click += AuthorLabel_Click;
             // 
             // versionLabel
             // 
@@ -102,7 +105,7 @@
             versionLabel.Name = "versionLabel";
             versionLabel.Size = new Size(46, 15);
             versionLabel.TabIndex = 34;
-            versionLabel.Text = "v1.2.1.0";
+            versionLabel.Text = "v1.2.2.0";
             versionLabel.TextAlign = ContentAlignment.MiddleRight;
             versionLabel.Click += VersionLabel_Click;
             versionLabel.DoubleClick += VersionLabel_Click;
@@ -161,7 +164,7 @@
             // 
             // pb_AppIcon
             // 
-            pb_AppIcon.Image = Properties.Resources.logo;
+            pb_AppIcon.Image = Properties.Resources.Autostrong_Sharp_Icon_x256;
             pb_AppIcon.Location = new Point(386, 10);
             pb_AppIcon.Name = "pb_AppIcon";
             pb_AppIcon.Size = new Size(112, 117);

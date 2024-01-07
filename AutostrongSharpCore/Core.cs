@@ -1,6 +1,6 @@
 ﻿using AutostrongSharpCore.Helpers;
-using AutostrongSharpCore.Models;
 using AutostrongSharpCore.Models.DSSS.AutoStrong;
+using AutostrongSharpCore.Models.GameProfile;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using static AutostrongSharpCore.Helpers.IoHelpers;
@@ -115,27 +115,20 @@ public class Core
 
     #region GAME_PROFILE
 
-    private DsssGameProfileService _gameProfile = new();
-    public List<ProfileFile> GameProfileFiles { get; private set; } = [];
-    public int GameProfileIndex { get; private set; }
-
-    private void RefreshGameProfiles()
-        => GameProfileFiles = Directory.GetFiles(ProfilesPath, "*.bin", SearchOption.TopDirectoryOnly).Select(file => new ProfileFile(file)).ToList();
-
-    public string GetGameProfileIcon() => _gameProfile.Base64AppIcon;
-    public uint GetGameProfileSteamAppId() => _gameProfile.SteamAppId;
-
+    private DsssGameProfileService _gpService = new(ProfilesPath);
+    
     public void SetNewGameProfile(int selectedIndex)
     {
         if (IsBusy) return;
-        GameProfileIndex = selectedIndex;
-        var profileFilePath = GameProfileFiles[GameProfileIndex].FullPath;
-        _gameProfile = new DsssGameProfileService();
-        var boolResult = _gameProfile.LoadGameProfile(profileFilePath, _deencryptor);
+        var boolResult = _gpService.LoadGameProfile(selectedIndex, _deencryptor);
         ReportProgress(boolResult.Description, 0);
     }
 
-    private string GetGameUrl() => $"https://store.steampowered.com/app/{_gameProfile.SteamAppId}/";
+    public List<DsssGameProfileFileInfo> GetGameProfileFileList() => _gpService.GameProfileFileList;
+    public int GetSelectedGameProfileFileIndex() => _gpService.GameProfileIndex;
+    public string GetGameProfileIcon() => _gpService.GameProfile.Base64AppIcon;
+    public uint GetGameProfileSteamAppId() => _gpService.GameProfile.SteamAppId;
+    private string GetGameUrl() => $"https://store.steampowered.com/app/{GetGameProfileSteamAppId()}/";
 
     #endregion
 
@@ -165,12 +158,10 @@ public class Core
     /// <summary>
     /// Initialize component.
     /// </summary>
-    private void InitializeComponent()
+    private static void InitializeComponent()
     {
         // create directories
         CreateDirectories();
-        // refresh game profiles
-        RefreshGameProfiles();
     }
 
     #endregion
@@ -336,7 +327,7 @@ public class Core
         _cts = new CancellationTokenSource();
         try
         {
-            _logger.Log(LogSeverity.Information, $"{operationType} has started. Selected game profile: {_gameProfile.GameTitle}.");
+            _logger.Log(LogSeverity.Information, $"{operationType} has started. Selected game profile: {_gpService.GameProfile.GameTitle}.");
             _logger.Log(LogSeverity.Information, $"Provided Steam32_ID: {SteamId}");
             _logger.Log(LogSeverity.Information, "ID | FileName | MD5_Checksum | IsEncrypted | Steam32_ID");
             await AsyncOperation(operationType, operationDelegate);

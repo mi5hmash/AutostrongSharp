@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using AutostrongSharpCore.Models;
+using AutostrongSharpCore.Models.GameProfile;
 using static AutostrongSharpCore.Helpers.IoHelpers;
 
 namespace AutostrongSharpCore.Helpers;
@@ -7,86 +8,119 @@ namespace AutostrongSharpCore.Helpers;
 public class DsssGameProfileService
 {
     /// <summary>
-    /// Name of the profile.
+    /// Enumeration of all available Platforms.
     /// </summary>
-    public static string ProfileName => "DSSS";
+    public enum PlatformsEnum
+    {
+        Pc,
+        Ps4,
+        XboxOne
+    }
+
+    /// <summary>
+    /// Type of the <see cref="GameProfile"/>.
+    /// </summary>
+    private static string GpType => "AutostrongSharpDSSS";
+
+    /// <summary>
+    /// <see cref="GameProfile"/> version.
+    /// </summary>
+    private static uint GpVersion => 1;
 
     /// <summary>
     /// Magic string used for spell casting.
     /// </summary>
     private static string Magic => @"{`liVW.(%(e6iP\Hy/Le\ivA(xx.>sx\Ml2pDe}^Of9rmMf&=>01UXh3k?wWv^|Y`/M_B(l5";
-
-    /// <summary>
-    /// Game Profile version.
-    /// </summary>
-    private static uint GpVersion => 1;
-
-    /// <summary>
-    /// Enumeration of all available Platforms.
-    /// </summary>
-    public enum PlatformsEnum
-    {
-        Pc = 0,
-        Ps4 = 1,
-        XboxOne = 2
-    }
-
-    /// <summary>
-    /// The title of a game.
-    /// </summary>
-    public string GameTitle { get; set; } = "Unknown";
-
-    /// <summary>
-    /// AppIcon encoded with Base64.
-    /// </summary>
-    public string Base64AppIcon { get; set; } = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAclBMVEUAAAD6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRP6tRO9kW18AAAAJXRSTlMAvkD40IEJ/GnklCsfEe2qn45b3mPziXduUToMyLaxpp1UTjMltzRUGQAAAOtJREFUOMvNk7kCgjAQREeEEC4V8EDwVv7/F9UsiRMsaCx8DcxmSPYI+Blq1nvMFHyifkQEj3w+NsxzMMv+iyWIYAjW5VpHh0EEZAhlVy2qrY0M4dDyyQ3AvVVAvjFa2/ViYfQJUK+tkgewNYFFASGVDSpg936WwF4iqaxnscg1kAwduEokzozB9nBTmrewA862n1yijRXmBCp15a0fFVDFTq7GhqQDGqfEEIxGVLEOKElbScgJUZnCBdlH2DKRchI895RbLdTVThxeq6E5qdIJTeMmgxzI4+ZSk2YbO/PUlZu8tFPXfvrH+R+eloxHObKCkJYAAAAASUVORK5CYII=";
-
-    /// <summary>
-    /// Steam AppID.
-    /// </summary>
-    public uint SteamAppId { get; set; }
     
     /// <summary>
-    /// Platform.
+    /// A path to directory where the <see cref="GameProfileFileList"/> are stored.
     /// </summary>
-    public uint Platform { get; set; } = (uint)PlatformsEnum.Pc;
+    private string GameProfilesPath { get; }
+
+    /// <summary>
+    /// A list of available <see cref="GameProfile"/>\s.
+    /// </summary>
+    public List<DsssGameProfileFileInfo> GameProfileFileList { get; private set; } = [];
+
+    /// <summary>
+    /// An index of currently selected <see cref="GameProfile"/>.
+    /// </summary>
+    public int GameProfileIndex { get; private set; }
+
+    /// <summary>
+    /// Currently loaded <see cref="GameProfile"/>.
+    /// </summary>
+    public DsssGameProfile GameProfile { get; private set; } = new();
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="gameProfilesPath"></param>
+    public DsssGameProfileService(string gameProfilesPath)
+    {
+        GameProfilesPath = gameProfilesPath;
+        RefreshGameProfiles();
+    }
+    
+    private void RefreshGameProfiles()
+        => GameProfileFileList = Directory.GetFiles(GameProfilesPath, "*.bin", SearchOption.TopDirectoryOnly).Select(file => new DsssGameProfileFileInfo(file)).ToList();
 
     /// <summary>
     /// Tries to load the game profile from the input file.
     /// </summary>
-    /// <param name="filePath"></param>
+    /// <param name="selectedIndex"></param>
+    /// <param name="deencryptor"></param>
     /// <returns>Success status flag.</returns>
-    public BoolResult LoadGameProfile(string filePath, AutoStrongDeencryptor deencryptor)
+    public BoolResult LoadGameProfile(int selectedIndex, AutoStrongDeencryptor deencryptor)
     {
+        string? failureReason;
+
+        // Make sure the selectedIndex is in bound.
+        if (selectedIndex < 0 || selectedIndex > GameProfileFileList.Count) { failureReason = "File index out of bound"; goto ORDER_66; }
+        
         // Try to read file.
         DsssGameProfileJson gpJson;
         try
         {
-            var jsonData = ReadFile(filePath).Decrypto(Magic);
+            var jsonData = ReadFile(GameProfileFileList[selectedIndex].FullPath).Decrypto(Magic);
             gpJson = JsonSerializer.Deserialize<DsssGameProfileJson>(jsonData)!;
         }
-        catch { return new BoolResult(false, "Game profile couldn't be loaded. Invalid file."); }
-        
+        catch { failureReason = "Invalid file"; goto ORDER_66; }
+
+        // Check profile type.
+        if (gpJson.GpType is null || gpJson.GpType != GpType) { failureReason = "Invalid file type"; goto ORDER_66; }
+
         // Check file version.
-        if (gpJson.GpVersion is null || gpJson.GpVersion > GpVersion) { return new BoolResult(false, "Game profile couldn't be loaded. Invalid file version."); }
+        if (gpJson.GpVersion is null || gpJson.GpVersion > GpVersion) { failureReason = "Invalid file version"; goto ORDER_66; }
 
         // Check values for null.
-        if (gpJson.Platform is null || gpJson.Base64AppIcon is null || gpJson.EncryptionKey is null || gpJson.EncryptionTable is null || gpJson.GameTitle is null)
-        { return new BoolResult(false, "Game profile couldn't be loaded. Invalid values."); }
+        if (gpJson.Platform is null) { failureReason = "Platform is null"; goto ORDER_66; }
+        if (gpJson.EncryptionKey is null) { failureReason = "EncryptionKey is null"; goto ORDER_66; }
+        if (gpJson.EncryptionTable is null) { failureReason = "EncryptionTable is null"; goto ORDER_66; }
+        if (gpJson.GameTitle is null) { failureReason = "GameTitle is null"; goto ORDER_66; }
+
+        DsssGameProfile gp = new();
 
         // Checks for the PC version.
         if (gpJson.Platform == (uint)PlatformsEnum.Pc)
         {
-            if (gpJson.SteamAppId is null) return new BoolResult(false, "Game profile couldn't be loaded. Missing SteamAppId.");
-            SteamAppId = (uint)gpJson.SteamAppId;
+            if (gpJson.SteamAppId is null) { failureReason = "GameTitle is null"; goto ORDER_66; } 
+            gp.SteamAppId = (uint)gpJson.SteamAppId;
         }
 
         // Load data from the Game Profile.
-        GameTitle = gpJson.GameTitle;
-        Platform = (uint)gpJson.Platform;
-        if (!string.IsNullOrEmpty(gpJson.Base64AppIcon)) Base64AppIcon = gpJson.Base64AppIcon;
+        gp.GameTitle = gpJson.GameTitle;
+        gp.Platform = (uint)gpJson.Platform;
+        if (!string.IsNullOrEmpty(gpJson.Base64AppIcon)) gp.Base64AppIcon = gpJson.Base64AppIcon;
+        // Setup encryption parameters.
         deencryptor.Setup(gpJson.EncryptionKey, gpJson.EncryptionTable);
-        
+
+        // Update GameProfile and its Index
+        GameProfile = gp;
+        GameProfileIndex = selectedIndex;
         return new BoolResult(true, "Successfully loaded the Game Profile.");
+
+        ORDER_66:
+        return new BoolResult(false, $"Game Profile couldn't be loaded. {failureReason}.");
     }
 }
