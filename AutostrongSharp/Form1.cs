@@ -74,8 +74,10 @@ public partial class Form1 : Form
     private void EnableSuperUser()
     {
         _isSuperUser = true;
+        // things to unlock
         ButtonEncryptAll.Visible = true;
         ButtonDecryptAll.Visible = true;
+        // play sound
         SystemSounds.Beep.Play();
     }
 
@@ -145,7 +147,7 @@ public partial class Form1 : Form
 
     #region INPUT_PATH
 
-    private void ValidateFilepath(object sender)
+    private void ValidatePath(object sender)
     {
         if (sender is not TextBox textBox) return;
         _programCore.SetInputDirectory(textBox.Text);
@@ -154,7 +156,7 @@ public partial class Form1 : Form
     }
 
     private void TBFilepath_Leave(object sender, EventArgs e)
-        => ValidateFilepath(sender);
+        => ValidatePath(sender);
 
     private void TBFilepath_DragDrop(object sender, DragEventArgs e)
     {
@@ -165,7 +167,7 @@ public partial class Form1 : Form
         if ((File.GetAttributes(filePath) & FileAttributes.Directory) != FileAttributes.Directory)
             filePath = Path.GetDirectoryName(filePath);
         textBox.Text = filePath;
-        ValidateFilepath(textBox);
+        ValidatePath(textBox);
     }
 
     private void TBFilepath_DragOver(object sender, DragEventArgs e)
@@ -176,7 +178,7 @@ public partial class Form1 : Form
         if (_programCore.IsBusy) return;
         if (folderBrowserDialog1.ShowDialog() != DialogResult.OK) return;
         TBFilepath.Text = folderBrowserDialog1.SelectedPath;
-        ValidateFilepath(TBFilepath);
+        ValidatePath(TBFilepath);
     }
 
     #endregion
