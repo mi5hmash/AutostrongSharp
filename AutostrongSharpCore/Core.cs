@@ -16,10 +16,10 @@ public class Core
 
     public static string RootPath => AppDomain.CurrentDomain.BaseDirectory;
 
-    private static string BackupFolder => "_BACKUP";
+    private const string BackupFolder = "_BACKUP";
     public static string BackupPath => Path.Combine(RootPath, BackupFolder);
 
-    private static string ProfilesFolder => "profiles";
+    private const string ProfilesFolder = "profiles";
     public static string ProfilesPath => Path.Combine(RootPath, ProfilesFolder);
 
     private static string PathPattern => @$"\{Path.DirectorySeparatorChar}(\d+)\{Path.DirectorySeparatorChar}(\d+)\{Path.DirectorySeparatorChar}remote\{Path.DirectorySeparatorChar}win64_save\{Path.DirectorySeparatorChar}?$";

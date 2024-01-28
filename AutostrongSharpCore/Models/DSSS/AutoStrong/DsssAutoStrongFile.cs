@@ -100,7 +100,7 @@ public class DsssAutoStrongFile(AutoStrongDeencryptor deencryptor)
         bw.WriteStruct(AutoStrongFooter);
 
         var dataAsBytes = ms.ToArray().AsSpan();
-        var dataAsInts = MemoryMarshal.Cast<byte, uint>(dataAsBytes[..(dataAsBytes.Length / sizeof(uint) * sizeof(uint))]);
+        var dataAsInts = MemoryMarshal.Cast<byte, uint>(dataAsBytes);
 
         // sign file
         SignFile(ref dataAsInts);
