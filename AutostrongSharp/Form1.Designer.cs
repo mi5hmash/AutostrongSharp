@@ -53,9 +53,11 @@
             ButtonOpenBackupDir = new Button();
             backupCheckBox = new CheckBox();
             superUserTimer = new System.Windows.Forms.Timer(components);
+            superUserTrigger = new PictureBox();
             statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pb_AppIcon).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pb_GameProfileIcon).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)superUserTrigger).BeginInit();
             SuspendLayout();
             // 
             // ButtonAbort
@@ -105,10 +107,8 @@
             versionLabel.Name = "versionLabel";
             versionLabel.Size = new Size(46, 15);
             versionLabel.TabIndex = 34;
-            versionLabel.Text = "v1.2.2.0";
+            versionLabel.Text = "v1.2.3.0";
             versionLabel.TextAlign = ContentAlignment.MiddleRight;
-            versionLabel.Click += VersionLabel_Click;
-            versionLabel.DoubleClick += VersionLabel_Click;
             // 
             // toolStripStatusLabel1
             // 
@@ -278,11 +278,23 @@
             superUserTimer.Interval = 500;
             superUserTimer.Tick += SuperUserTimer_Tick;
             // 
+            // superUserTrigger
+            // 
+            superUserTrigger.BackColor = Color.Transparent;
+            superUserTrigger.Location = new Point(386, 128);
+            superUserTrigger.Name = "superUserTrigger";
+            superUserTrigger.Size = new Size(10, 10);
+            superUserTrigger.TabIndex = 39;
+            superUserTrigger.TabStop = false;
+            superUserTrigger.Click += SuperUserTrigger_Click;
+            superUserTrigger.DoubleClick += SuperUserTrigger_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(510, 185);
+            Controls.Add(superUserTrigger);
             Controls.Add(ButtonOpenBackupDir);
             Controls.Add(backupCheckBox);
             Controls.Add(LabelGameProfile);
@@ -311,6 +323,7 @@
             statusStrip1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pb_AppIcon).EndInit();
             ((System.ComponentModel.ISupportInitialize)pb_GameProfileIcon).EndInit();
+            ((System.ComponentModel.ISupportInitialize)superUserTrigger).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -339,5 +352,6 @@
         private CheckBox backupCheckBox;
         private Button ButtonOpenBackupDir;
         private System.Windows.Forms.Timer superUserTimer;
+        private PictureBox superUserTrigger;
     }
 }

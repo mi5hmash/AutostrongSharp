@@ -3,6 +3,9 @@
 [![Visual Studio 2022](https://img.shields.io/badge/VS%202022-blueviolet?logo=visualstudio&logoColor=white)](https://visualstudio.microsoft.com/)
 [![dotNET8](https://img.shields.io/badge/.NET%208-blueviolet)](https://visualstudio.microsoft.com/)
 
+> [!IMPORTANT]
+> **This software is free and open source. If someone asks you to pay for it, then it's likely a scam.**
+
 # :cd: AutostrongSharp - What is it :interrobang:
 This application can **decrypt and encrypt save files** from various games running on RE Engine. It can also **resign these save files** with your own SteamID to **use any SaveData on your profile**.
 

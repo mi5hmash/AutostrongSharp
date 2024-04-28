@@ -74,7 +74,7 @@ public class Core
     }
 
     /// <summary>
-    /// Opens the Backup directory
+    /// Opens the Backup directory.
     /// </summary>
     public static void OpenBackupDirectory()
         => OpenDirectory(BackupPath);
@@ -195,7 +195,7 @@ public class Core
     /// <param name="filePath"></param>
     /// <param name="fileData"></param>
     /// <returns></returns>
-    private static DialogAnswer WriteBytesToFile(string filePath, Span<byte> fileData)
+    private static DialogAnswer WriteBytesToFile(string filePath, ReadOnlySpan<byte> fileData)
     {
         do
         {
@@ -206,7 +206,7 @@ public class Core
             return dialogResult;
         } while (true);
 
-        static bool TryWriteAllBytes(string fPath, Span<byte> bytes)
+        static bool TryWriteAllBytes(string fPath, ReadOnlySpan<byte> bytes)
         {
             try
             {
@@ -386,8 +386,7 @@ public class Core
                 }
                 
                 // log info about the input file
-                if (_logger is { IsEnabled: true, IsSilent: false }) 
-                    _logger.Log(LogSeverity.Information, $"I_{ctr} | {Path.GetFileName(files[ctr])} | {Md5HashFromFile(files[ctr])} | {dsssFile.IsEncrypted()} | {dsssFile.DataHeader.GetSteamId(_deencryptor)}");
+                _logger.LogDebug(LogSeverity.Information, $"I_{ctr} | {Path.GetFileName(files[ctr])} | {Md5HashFromFile(files[ctr])} | {dsssFile.IsEncrypted()} | {dsssFile.DataHeader.GetSteamId(_deencryptor)}");
 
                 // check operation type and adjust to it
                 switch (operationType)
@@ -446,8 +445,7 @@ public class Core
                 }
 
                 // log info about the output file
-                if (_logger is { IsEnabled: true, IsSilent: false })
-                    _logger.Log(LogSeverity.Information, $"O_{ctr} | {Path.GetFileName(files[ctr])} | {Md5HashFromFile(files[ctr])} | {dsssFile.IsEncrypted()} | {dsssFile.DataHeader.GetSteamId(_deencryptor)}");
+                _logger.LogDebug(LogSeverity.Information, $"O_{ctr} | {Path.GetFileName(files[ctr])} | {Md5HashFromFile(files[ctr])} | {dsssFile.IsEncrypted()} | {dsssFile.DataHeader.GetSteamId(_deencryptor)}");
 
                 ORDER_66:
                 Interlocked.Increment(ref progress);

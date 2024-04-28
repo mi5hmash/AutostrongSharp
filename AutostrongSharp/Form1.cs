@@ -18,9 +18,10 @@ public partial class Form1 : Form
         var pValue = new Progress<int>(i => toolStripProgressBar1.Value = i);
         _programCore = new Core(mediator, pText, pValue, new SimpleLogger(new SimpleLoggerOptions(AppInfo.RootPath)
         {
+            AllowDebugMessages = true,
+            LoggedAppName = $"{AppInfo.Title} v{AppInfo.Version}",
             MaxLogFiles = 1,
-            MinSeverityLevel = LogSeverity.Information,
-            LoggedAppName = $"{AppInfo.Title} v{AppInfo.Version}"
+            MinSeverityLevel = LogSeverity.Information
         }));
         _programCore.ActivateLogger();
 
@@ -40,6 +41,11 @@ public partial class Form1 : Form
         pb_AppIcon.Controls.Add(pb_GameProfileIcon);
         pb_GameProfileIcon.Location = new Point(0, pb_AppIcon.Height - pb_GameProfileIcon.Height);
 
+        // transparent SuperUserTrigger hack
+        versionLabel.Controls.Add(superUserTrigger);
+        superUserTrigger.Size = versionLabel.Size;
+        superUserTrigger.Location = new Point(0, 0);
+
         // populate the GameProfile ComboBox
         PopulateGameProfileComboBox();
     }
@@ -51,7 +57,7 @@ public partial class Form1 : Form
     private bool _isSuperUser;
     private int _superUserClicks;
 
-    private void VersionLabel_Click(object sender, EventArgs e)
+    private void SuperUserTrigger_Click(object sender, EventArgs e)
     {
         if (_isSuperUser) return;
 

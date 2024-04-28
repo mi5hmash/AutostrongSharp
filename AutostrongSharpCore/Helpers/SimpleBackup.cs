@@ -15,7 +15,7 @@ public class SimpleBackup
     /// A directory of a current backup.
     /// </summary>
     public string CurrentBackupDirectory { get; private set; }
-    
+
     /// <summary>
     /// Default constructor.
     /// </summary>
@@ -36,7 +36,7 @@ public class SimpleBackup
     /// Combines a path to a new backup folder. 
     /// </summary>
     /// <returns></returns>
-    private string NewBackupPath() 
+    private string NewBackupPath()
         => Path.Combine(_backupRootDirectory, $"{_backupFolderNamePrefix}_{DateTime.Now:yyyyMMddHHmmssfff}");
 
     /// <summary>
@@ -50,39 +50,6 @@ public class SimpleBackup
     /// </summary>
     public void NewBackup()
     {
-        if (_zipBackups)
-        {
-            var backups = Directory.GetFiles(_backupRootDirectory, "*.zip", SearchOption.TopDirectoryOnly)
-                .Where(filePath => Path.GetFileName(filePath).StartsWith(_backupFolderNamePrefix, StringComparison.OrdinalIgnoreCase)).OrderDescending().ToList();
-            // delete the oldest backup(s) if the backup limit is reached
-            var limitOverflow = backups.Count - _maxBackups;
-            switch (limitOverflow)
-            {
-                case 0:
-                    SafelyDeleteFile(backups.Last());
-                    break;
-                case > 0:
-                    SafelyDeleteFile(backups.TakeLast(limitOverflow).ToArray());
-                    break;
-            }
-        }
-        else
-        {
-            var backupDirs = Directory.GetDirectories(_backupRootDirectory)
-                .Where(folderPath => Path.GetFileName(folderPath).StartsWith(_backupFolderNamePrefix, StringComparison.OrdinalIgnoreCase)).OrderDescending().ToList();
-            // delete the oldest backup(s) if the backup limit is reached
-            var limitOverflow = backupDirs.Count - _maxBackups;
-            switch (limitOverflow)
-            {
-                case 0:
-                    SafelyDeleteDirectory(backupDirs.Last());
-                    break;
-                case > 0:
-                    SafelyDeleteDirectory(backupDirs.TakeLast(limitOverflow).ToArray());
-                    break;
-            }
-        }
-
         CurrentBackupDirectory = NewBackupPath();
         RecreateDirectory(CurrentBackupDirectory);
 
@@ -108,12 +75,12 @@ public class SimpleBackup
     public bool[] Backup(string[] filePaths)
     {
         var results = new bool[filePaths.Length];
-        for (var i = 0; i < filePaths.Length; i++) 
+        for (var i = 0; i < filePaths.Length; i++)
             results[i] = Backup(filePaths[i]);
 
         return results;
     }
-    
+
     /// <summary>
     /// Finalizes backup and packs it into a zip file if <see cref="_zipBackups"/> flag is true.
     /// </summary>
@@ -121,14 +88,28 @@ public class SimpleBackup
     {
         // check if directory exist or if backup is finalized
         if (!Directory.Exists(CurrentBackupDirectory) || _isFinalized) return;
-        
+
         var files = Directory.GetFiles(CurrentBackupDirectory);
         if (files.Length > 0)
         {
             if (_zipBackups)
             {
+                // save a new backup
                 ZipFile.CreateFromDirectory(CurrentBackupDirectory, $"{CurrentBackupDirectory}.zip");
                 DeleteCurrentBackup();
+                // delete the oldest backup(s) if the backup limit is reached
+                var backups = Directory.GetFiles(_backupRootDirectory, "*.zip", SearchOption.TopDirectoryOnly)
+                    .Where(filePath => Path.GetFileName(filePath).StartsWith(_backupFolderNamePrefix, StringComparison.OrdinalIgnoreCase)).OrderDescending().ToList();
+                var limitOverflow = backups.Count - _maxBackups;
+                if (limitOverflow > 0) SafelyDeleteFile(backups.TakeLast(limitOverflow).ToArray());
+            }
+            else
+            {
+                // delete the oldest backup(s) if the backup limit is reached
+                var backupDirs = Directory.GetDirectories(_backupRootDirectory)
+                    .Where(folderPath => Path.GetFileName(folderPath).StartsWith(_backupFolderNamePrefix, StringComparison.OrdinalIgnoreCase)).OrderDescending().ToList();
+                var limitOverflow = backupDirs.Count - _maxBackups;
+                if (limitOverflow > 0) SafelyDeleteDirectory(backupDirs.TakeLast(limitOverflow).ToArray());
             }
             _isFinalized = true;
             return;

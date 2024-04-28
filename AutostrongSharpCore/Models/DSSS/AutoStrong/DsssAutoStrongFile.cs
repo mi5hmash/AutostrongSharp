@@ -86,7 +86,7 @@ public class DsssAutoStrongFile(AutoStrongDeencryptor deencryptor)
     /// Get an existing object of a <see cref="DsssAutoStrongFile"/> type as byte array.
     /// </summary>
     /// <returns></returns>
-    public Span<byte> GetFileData()
+    public ReadOnlySpan<byte> GetFileData()
     {
         using MemoryStream ms = new();
         using BinWriter bw = new(ms);
