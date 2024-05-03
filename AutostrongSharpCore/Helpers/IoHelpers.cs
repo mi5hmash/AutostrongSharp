@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.IO;
 using System.Security.Cryptography;
 
 namespace AutostrongSharpCore.Helpers;
@@ -121,14 +122,16 @@ public static class IoHelpers
     }
 
     /// <summary>
-    /// Opens the folder in the new explorer window.
+    /// Opens the folder in the new file explorer window.
     /// </summary>
-    /// <param name="folderPath"></param>
+    /// <param name="fPath"></param>
     /// <returns></returns>
-    public static void OpenDirectory(string folderPath)
+    public static void OpenDirectory(string fPath)
     {
-        Directory.CreateDirectory(folderPath);
-        Process.Start("explorer.exe", folderPath);
+        if (File.Exists(fPath))
+            Process.Start("explorer.exe", $"/select,\"{fPath}\"");
+        else if (Directory.Exists(fPath))
+            Process.Start("explorer.exe", fPath);
     }
 
     /// <summary>
