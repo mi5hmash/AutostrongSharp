@@ -1,5 +1,6 @@
-﻿using System.IO.Compression;
-using System.Security.Cryptography;
+﻿// v2024-08-03 21:16:48
+
+using System.Runtime.InteropServices;
 
 namespace AutostrongSharpCore.Helpers;
 
@@ -22,25 +23,26 @@ public static class SimpleDeencryptor
     }
 
     /// <summary>
-    /// Encryption Spell.
+    /// Encryption spell.
     /// </summary>
     /// <param name="inputString"></param>
     /// <param name="magic"></param>
+    /// <param name="murMurSeed"></param>
     /// <returns></returns>
-    public static string Encrypto(this string inputString, string magic)
+    public static string Encrypto(this string inputString, string magic, uint murMurSeed = 0)
     {
         var entryData = inputString.FromUtf8String();
-        var checksum = MD5.HashData(entryData);
-        using MemoryStream ms = new();
-        ms.Write(magic.FromAsciiString().SimpleDeEncryption(checksum));
-        using MemoryStream ms2 = new();
-        ms2.Write(entryData.GzipCompress().SimpleDeEncryption(ms.ToArray()));
-        ms2.Write(checksum);
-        return ms2.ToArray().Base64Encode();
+        var checksum = BitConverter.GetBytes(Murmur3_32(MemoryMarshal.Cast<byte, uint>(entryData), murMurSeed));
+        using MemoryStream msi = new();
+        msi.Write(magic.FromAsciiString().SimpleDeEncryption(checksum));
+        using MemoryStream mso = new();
+        mso.Write(entryData.GzipCompress().SimpleDeEncryption(msi.ToArray()));
+        mso.Write(checksum);
+        return mso.ToArray().Base64Encode();
     }
 
     /// <summary>
-    /// Decryption Spell.
+    /// Decryption spell.
     /// </summary>
     /// <param name="inputString"></param>
     /// <param name="magic"></param>
@@ -49,71 +51,48 @@ public static class SimpleDeencryptor
     {
         var entryData = inputString.Base64Decode();
         using MemoryStream ms = new();
-        ms.Write(magic.FromAsciiString().SimpleDeEncryption(entryData.TakeLast(16).ToArray()));
+        ms.Write(magic.FromAsciiString().SimpleDeEncryption(entryData.TakeLast(sizeof(uint)).ToArray()));
         using MemoryStream ms2 = new();
-        ms2.Write(entryData, 0, entryData.Length - 16);
+        ms2.Write(entryData, 0, entryData.Length - sizeof(uint));
         return ms2.ToArray().SimpleDeEncryption(ms.ToArray()).GzipDecompress().ToUtf8String();
     }
 
     /// <summary>
-    /// Compresses <paramref name="bytes"/> with GZip.
+    /// Calculates MurmurHash3.
     /// </summary>
-    /// <param name="bytes"></param>
+    /// <param name="data"></param>
+    /// <param name="seed"></param>
     /// <returns></returns>
-    public static byte[] GzipCompress(this byte[] bytes)
+    public static uint Murmur3_32(ReadOnlySpan<uint> data, uint seed = 0)
     {
-        using var ms = new MemoryStream();
-        using (var gz = new GZipStream(ms, CompressionLevel.Optimal))
-        {
-            gz.Write(bytes, 0, bytes.Length);
-        }
-        return ms.ToArray();
-    }
+        const uint hash0 = 0x1B873593;
+        const uint hash1 = 0xCC9E2D51;
+        const uint hash2 = 0x052250EC;
+        const uint hash3 = 0xC2B2AE35;
+        const uint hash4 = 0x85EBCA6B;
 
-    /// <summary>
-    /// Decompresses <paramref name="bytes"/> with GZip.
-    /// </summary>
-    /// <param name="bytes"></param>
-    /// <returns></returns>
-    public static byte[] GzipDecompress(this byte[] bytes)
-    {
-        using var ms = new MemoryStream(bytes);
-        using var ms2 = new MemoryStream();
-        using (var gz = new GZipStream(ms, CompressionMode.Decompress))
-        {
-            gz.CopyTo(ms2);
-        }
-        return ms2.ToArray();
-    }
+        var lengthInBytes = data.Length * 4;
 
-    /// <summary>
-    /// Compresses <paramref name="bytes"/> with Brotli.
-    /// </summary>
-    /// <param name="bytes"></param>
-    /// <returns></returns>
-    public static byte[] BrotliCompress(this byte[] bytes)
-    {
-        using var ms = new MemoryStream();
-        using (var bs = new BrotliStream(ms, CompressionLevel.Optimal))
-        {
-            bs.Write(bytes, 0, bytes.Length);
-        }
-        return ms.ToArray();
-    }
+        foreach (var e in data)
+            seed = 5 * (uint.RotateLeft((hash0 * uint.RotateLeft(hash1 * e, 15)) ^ seed, 13) - hash2);
 
-    /// <summary>
-    /// Decompresses <paramref name="bytes"/> with Brotli.
-    /// </summary>
-    /// <param name="bytes"></param>
-    /// <returns></returns>
-    public static byte[] BrotliDecompress(this byte[] bytes)
-    {
-        using var ms = new MemoryStream(bytes);
-        using var ms2 = new MemoryStream();
-        using (var bs = new BrotliStream(ms, CompressionMode.Decompress))
+        uint mod0 = 0;
+        switch (lengthInBytes & 3)
         {
-            bs.CopyTo(ms2);
+            case 2:
+                mod0 ^= data[1] << 8;
+                goto case 1;
+            case 3:
+                mod0 = data[2] << 16;
+                goto case 2;
+            case 1:
+                seed ^= hash0 * uint.RotateLeft(hash1 * (mod0 ^ data[0]), 15);
+                break;
         }
-        return ms2.ToArray();
+
+        var basis = (uint)(lengthInBytes ^ seed);
+        var hiWordOfBasis = (basis >> 16) & 0xFFFF;
+
+        return (hash3 * ((hash4 * (basis ^ hiWordOfBasis)) ^ ((hash4 * (basis ^ hiWordOfBasis)) >> 13))) ^ ((hash3 * ((hash4 * (basis ^ hiWordOfBasis)) ^ ((hash4 * (basis ^ hiWordOfBasis)) >> 13))) >> 16);
     }
 }

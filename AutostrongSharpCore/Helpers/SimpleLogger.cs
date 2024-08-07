@@ -1,4 +1,6 @@
-﻿using static AutostrongSharpCore.Helpers.IoHelpers;
+﻿// v2024-08-06 23:19:03
+
+using static AutostrongSharpCore.Helpers.IoHelpers;
 
 namespace AutostrongSharpCore.Helpers;
 

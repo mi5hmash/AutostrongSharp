@@ -6,12 +6,12 @@ using static AutostrongSharpCore.Helpers.SimpleLogger;
 
 namespace AutostrongSharp;
 
-public partial class Form1 : Form
+public partial class MainForm : Form
 {
     // Program Core
     private readonly Core _programCore;
 
-    public Form1()
+    public MainForm()
     {
         var mediator = new SimpleMediatorWinForms();
         var pText = new Progress<string>(s => toolStripStatusLabel1.Text = s);
