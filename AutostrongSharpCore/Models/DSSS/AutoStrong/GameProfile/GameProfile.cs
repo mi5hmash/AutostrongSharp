@@ -1,8 +1,8 @@
-﻿using static AutostrongSharpCore.Helpers.DsssGameProfileService;
+﻿using static AutostrongSharpCore.Models.DSSS.AutoStrong.GameProfile.GameProfileService;
 
-namespace AutostrongSharpCore.Models.GameProfile;
+namespace AutostrongSharpCore.Models.DSSS.AutoStrong.GameProfile;
 
-public class DsssGameProfile
+public class GameProfile
 {
     /// <summary>
     /// The title of a game.

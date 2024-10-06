@@ -1,4 +1,4 @@
-﻿// v2024-08-03 21:16:48
+﻿// v2024-10-05 21:16:48
 
 using System.Runtime.InteropServices;
 
@@ -79,12 +79,12 @@ public static class SimpleDeencryptor
         uint mod0 = 0;
         switch (lengthInBytes & 3)
         {
-            case 2:
-                mod0 ^= data[1] << 8;
-                goto case 1;
             case 3:
                 mod0 = data[2] << 16;
                 goto case 2;
+            case 2:
+                mod0 ^= data[1] << 8;
+                goto case 1;
             case 1:
                 seed ^= hash0 * uint.RotateLeft(hash1 * (mod0 ^ data[0]), 15);
                 break;
@@ -92,7 +92,10 @@ public static class SimpleDeencryptor
 
         var basis = (uint)(lengthInBytes ^ seed);
         var hiWordOfBasis = (basis >> 16) & 0xFFFF;
+        var lv1 = hash4 * (basis ^ hiWordOfBasis);
+        var lv2 = hash3 * (lv1 ^ (lv1 >> 13));
+        lv2 ^= lv2 >> 16;
 
-        return (hash3 * ((hash4 * (basis ^ hiWordOfBasis)) ^ ((hash4 * (basis ^ hiWordOfBasis)) >> 13))) ^ ((hash3 * ((hash4 * (basis ^ hiWordOfBasis)) ^ ((hash4 * (basis ^ hiWordOfBasis)) >> 13))) >> 16);
+        return lv2;
     }
 }

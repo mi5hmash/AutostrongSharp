@@ -1,6 +1,6 @@
-﻿namespace AutostrongSharpCore.Models.GameProfile;
+﻿namespace AutostrongSharpCore.Models.DSSS.AutoStrong.GameProfile;
 
-public class DsssGameProfileFileInfo(string fullPath)
+public class GameProfileFileInfo(string fullPath)
 {
     public string FullPath { get; } = fullPath;
     public string Name { get; } = Path.GetFileNameWithoutExtension((string?)fullPath) ?? string.Empty;

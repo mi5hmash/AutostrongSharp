@@ -3,7 +3,7 @@
 namespace AutostrongSharpCore.Models.DSSS.AutoStrong;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 0x4)]
-public class DsssAutoStrongFooter
+public class AutoStrongFooter
 {
     /// <summary>
     /// A file signature.
@@ -11,15 +11,15 @@ public class DsssAutoStrongFooter
     public uint Signature { get; set; } = 0x7856_3412;
 
     /// <summary>
-    /// Create a parameter-less <see cref="DsssAutoStrongFooter"/>.
+    /// Create a parameter-less <see cref="AutoStrongFooter"/>.
     /// </summary>
-    public DsssAutoStrongFooter() { }
+    public AutoStrongFooter() { }
 
     /// <summary>
-    /// Create a <see cref="DsssAutoStrongFooter"/> with given parameters.
+    /// Create a <see cref="AutoStrongFooter"/> with given parameters.
     /// </summary>
     /// <param name="signature"></param>
-    public DsssAutoStrongFooter(uint signature)
+    public AutoStrongFooter(uint signature)
     {
         Signature = signature;
     }

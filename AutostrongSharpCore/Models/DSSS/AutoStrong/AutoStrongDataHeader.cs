@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace AutostrongSharpCore.Models.DSSS.AutoStrong;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 0x20)]
-public class DsssAutoStrongDataHeader
+public class AutoStrongDataHeader
 {
     private uint _fileFormat1 = 0x5353_5344;
     private uint _fileFormat2 = 0x5353_5344;
@@ -88,12 +88,12 @@ public class DsssAutoStrongDataHeader
     }
 
     /// <summary>
-    /// Create a parameter-less <see cref="DsssAutoStrongHeader"/>.
+    /// Create a parameter-less <see cref="AutoStrongHeader"/>.
     /// </summary>
-    public DsssAutoStrongDataHeader() { }
+    public AutoStrongDataHeader() { }
 
     /// <summary>
-    /// Create a <see cref="DsssAutoStrongHeader"/> with given parameters.
+    /// Create a <see cref="AutoStrongHeader"/> with given parameters.
     /// </summary>
     /// <param name="steam32Id"></param>
     /// <param name="unknown1"></param>
@@ -101,7 +101,7 @@ public class DsssAutoStrongDataHeader
     /// <param name="unknown3"></param>
     /// <param name="unknown4"></param>
     /// <param name="unknown5"></param>
-    public DsssAutoStrongDataHeader(uint steam32Id, uint unknown1, uint unknown2, uint unknown3, uint unknown4, uint unknown5)
+    public AutoStrongDataHeader(uint steam32Id, uint unknown1, uint unknown2, uint unknown3, uint unknown4, uint unknown5)
     {
         Steam32Id = steam32Id;
         Unknown1 = unknown1;
@@ -112,7 +112,7 @@ public class DsssAutoStrongDataHeader
     }
 
     /// <summary>
-    /// Decrypts <see cref="DsssAutoStrongDataHeader"/>.
+    /// Decrypts <see cref="AutoStrongDataHeader"/>.
     /// </summary>
     public void DecryptData(AutoStrongDeencryptor dsssDeencryptor)
     {
@@ -123,7 +123,7 @@ public class DsssAutoStrongDataHeader
     }
 
     /// <summary>
-    /// Encrypts <see cref="DsssAutoStrongDataHeader"/>.
+    /// Encrypts <see cref="AutoStrongDataHeader"/>.
     /// </summary>
     public void EncryptData(AutoStrongDeencryptor dsssDeencryptor)
     {

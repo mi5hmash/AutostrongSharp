@@ -1,6 +1,6 @@
-﻿namespace AutostrongSharpCore.Models.GameProfile;
+﻿namespace AutostrongSharpCore.Models.DSSS.AutoStrong.GameProfile;
 
-public class DsssGameProfileJson
+public class GameProfileJson
 {
     /// <summary>
     /// Game Profile type.
@@ -33,7 +33,7 @@ public class DsssGameProfileJson
     public string? EncryptionKey { get; set; }
 
     /// <summary>
-    /// EncryptionKey.
+    /// EncryptionTable.
     /// </summary>
     public string? EncryptionTable { get; set; }
 
@@ -45,7 +45,7 @@ public class DsssGameProfileJson
     /// <summary>
     /// Default Constructor that loads the configuration.
     /// </summary>
-    public DsssGameProfileJson()
+    public GameProfileJson()
     {
         // must be present, otherwise there will be problems on deserialization
     }
@@ -55,7 +55,7 @@ public class DsssGameProfileJson
     /// </summary>
     /// <param name="gpType"></param>
     /// <param name="gpVersion"></param>
-    public DsssGameProfileJson(string gpType, uint gpVersion)
+    public GameProfileJson(string gpType, uint gpVersion)
     {
         GpType = gpType;
         GpVersion = gpVersion;

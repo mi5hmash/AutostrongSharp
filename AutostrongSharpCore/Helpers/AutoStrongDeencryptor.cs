@@ -12,11 +12,11 @@ public class AutoStrongDeencryptor
 
     #endregion
 
-/// <summary>
-/// Sets up all parameters.
-/// </summary>
-/// <param name="base64EncryptionKey"></param>
-/// <param name="base64EncryptionTable"></param>
+    /// <summary>
+    /// Sets up all parameters.
+    /// </summary>
+    /// <param name="base64EncryptionKey"></param>
+    /// <param name="base64EncryptionTable"></param>
     public void Setup(string base64EncryptionKey, string base64EncryptionTable)
     {
         EncryptionKey = base64EncryptionKey.Base64DecodeUtf8().ToUintArray();

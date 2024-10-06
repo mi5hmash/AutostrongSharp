@@ -1,6 +1,6 @@
 ﻿using AutostrongSharpCore.Helpers;
 using AutostrongSharpCore.Models.DSSS.AutoStrong;
-using AutostrongSharpCore.Models.GameProfile;
+using AutostrongSharpCore.Models.DSSS.AutoStrong.GameProfile;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using static AutostrongSharpCore.Helpers.IoHelpers;
@@ -115,7 +115,7 @@ public class Core
 
     #region GAME_PROFILE
 
-    private DsssGameProfileService _gpService = new(ProfilesPath);
+    private GameProfileService _gpService;
     
     public void SetNewGameProfile(int selectedIndex)
     {
@@ -123,8 +123,7 @@ public class Core
         var boolResult = _gpService.LoadGameProfile(selectedIndex, _deencryptor);
         ReportProgress(boolResult.Description, 0);
     }
-
-    public List<DsssGameProfileFileInfo> GetGameProfileFileList() => _gpService.GameProfileFileList;
+    public List<GameProfileFileInfo> GetGameProfileFileList() => _gpService.GameProfileFileList;
     public int GetSelectedGameProfileFileIndex() => _gpService.GameProfileIndex;
     public string GetGameProfileIcon() => _gpService.GameProfile.Base64AppIcon;
     public uint GetGameProfileSteamAppId() => _gpService.GameProfile.SteamAppId;
@@ -152,18 +151,14 @@ public class Core
         _pValue = pValue;
         _logger = logger;
         InputDirectory = RootPath;
-        InitializeComponent();
-    }
 
-    /// <summary>
-    /// Initialize component.
-    /// </summary>
-    private static void InitializeComponent()
-    {
         // create directories
         CreateDirectories();
-    }
 
+        // create _gpService
+        _gpService = new GameProfileService(ProfilesPath);
+    }
+    
     #endregion
 
     #region IO
@@ -195,33 +190,23 @@ public class Core
     /// <param name="filePath"></param>
     /// <param name="fileData"></param>
     /// <returns></returns>
-    private static DialogAnswer WriteBytesToFile(string filePath, ReadOnlySpan<byte> fileData)
+    private static DialogAnswer WriteBytesToFile(string filePath, byte[] fileData)
     {
         do
         {
-            if (TryWriteAllBytes(filePath, fileData)) return DialogAnswer.Continue;
+            if (WriteBinaryFile(filePath, fileData)) return DialogAnswer.Continue;
             // ask the user if they want to try again
             var dialogResult = _mediator.Ask($"""Failed to save the file: "{filePath}".{Environment.NewLine}It may be currently in use by another program.{Environment.NewLine}Would you like to try again?""", "Failed to save the file", QuestionOptions.AbortRetryIgnore, DialogType.Exclamation);
             if (dialogResult == DialogAnswer.Retry) continue;
             return dialogResult;
         } while (true);
-
-        static bool TryWriteAllBytes(string fPath, ReadOnlySpan<byte> bytes)
-        {
-            try
-            {
-                File.WriteAllBytes(fPath, bytes.ToArray());
-            }
-            catch { return false; }
-            return true;
-        }
     }
-    
+
     /// <summary>
     /// Opens a game website in a default web browser.
     /// </summary>
     public void VisitGameWebsite()
-        => Process.Start(new ProcessStartInfo { FileName = GetGameUrl(), UseShellExecute = true });
+        => OpenWebsite(GetGameUrl());
 
     #endregion
 
@@ -302,7 +287,7 @@ public class Core
         IsBusy = false;
     }
 
-    private delegate void OperationDelegate(DsssAutoStrongFile dsssFile);
+    private delegate void OperationDelegate(AutoStrongFile dsssFile);
 
     private enum OperationType
     {
@@ -369,7 +354,7 @@ public class Core
             Parallel.For((long)0, files.Length, po, ctr =>
             {
                 // try to load file
-                var dsssFile = new DsssAutoStrongFile(_deencryptor);
+                var dsssFile = new AutoStrongFile(_deencryptor);
                 var result = dsssFile.SetFileData(files[ctr]);
                 if (!result.Result)
                 {
@@ -431,7 +416,7 @@ public class Core
 
                 // save file
                 var fileData = dsssFile.GetFileData();
-                var writeResult = WriteBytesToFile(files[ctr], fileData);
+                var writeResult = WriteBytesToFile(files[ctr], fileData.ToArray());
                 switch (writeResult)
                 {
                     case DialogAnswer.Continue:
@@ -458,19 +443,19 @@ public class Core
             ReportProgress(message, 100);
         });
     }
-    private static void DecryptAll(DsssAutoStrongFile dsssFile)
+    private static void DecryptAll(AutoStrongFile dsssFile)
     {
         dsssFile.DecryptDataHeader();
         dsssFile.DecryptData();
     }
 
-    private static void EncryptAll(DsssAutoStrongFile dsssFile)
+    private static void EncryptAll(AutoStrongFile dsssFile)
     {
         dsssFile.EncryptDataHeader();
         dsssFile.EncryptData();
     }
 
-    private void ResignAll(DsssAutoStrongFile dsssFile)
+    private void ResignAll(AutoStrongFile dsssFile)
     {
         if (dsssFile.IsEncrypted())
         {

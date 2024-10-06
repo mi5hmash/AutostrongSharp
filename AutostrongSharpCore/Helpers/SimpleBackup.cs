@@ -1,4 +1,4 @@
-﻿// v2024-08-06 23:19:03
+﻿// v2024-10-06 00:19:03
 
 using System.IO.Compression;
 using static AutostrongSharpCore.Helpers.IoHelpers;
@@ -103,7 +103,7 @@ public class SimpleBackup
                 var backups = Directory.GetFiles(_backupRootDirectory, "*.zip", SearchOption.TopDirectoryOnly)
                     .Where(filePath => Path.GetFileName(filePath).StartsWith(_backupFolderNamePrefix, StringComparison.OrdinalIgnoreCase)).OrderDescending().ToList();
                 var limitOverflow = backups.Count - _maxBackups;
-                if (limitOverflow > 0) SafelyDeleteFile(backups.TakeLast(limitOverflow).ToArray());
+                if (limitOverflow > 0) SafelyDeleteFiles(backups.TakeLast(limitOverflow).ToArray());
             }
             else
             {
@@ -111,7 +111,7 @@ public class SimpleBackup
                 var backupDirs = Directory.GetDirectories(_backupRootDirectory)
                     .Where(folderPath => Path.GetFileName(folderPath).StartsWith(_backupFolderNamePrefix, StringComparison.OrdinalIgnoreCase)).OrderDescending().ToList();
                 var limitOverflow = backupDirs.Count - _maxBackups;
-                if (limitOverflow > 0) SafelyDeleteDirectory(backupDirs.TakeLast(limitOverflow).ToArray());
+                if (limitOverflow > 0) SafelyDeleteDirectories(backupDirs.TakeLast(limitOverflow).ToArray());
             }
             _isFinalized = true;
             return;

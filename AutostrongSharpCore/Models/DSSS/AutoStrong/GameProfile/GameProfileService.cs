@@ -1,11 +1,10 @@
 ﻿using System.Text.Json;
-using AutostrongSharpCore.Models;
-using AutostrongSharpCore.Models.GameProfile;
+using AutostrongSharpCore.Helpers;
 using static AutostrongSharpCore.Helpers.IoHelpers;
 
-namespace AutostrongSharpCore.Helpers;
+namespace AutostrongSharpCore.Models.DSSS.AutoStrong.GameProfile;
 
-public class DsssGameProfileService
+public class GameProfileService
 {
     /// <summary>
     /// Enumeration of all available Platforms.
@@ -31,7 +30,7 @@ public class DsssGameProfileService
     /// Magic string used for spell casting.
     /// </summary>
     private static string Magic => @"{`liVW.(%(e6iP\Hy/Le\ivA(xx.>sx\Ml2pDe}^Of9rmMf&=>01UXh3k?wWv^|Y`/M_B(l5";
-    
+
     /// <summary>
     /// A path to directory where the <see cref="GameProfileFileList"/> are stored.
     /// </summary>
@@ -40,7 +39,7 @@ public class DsssGameProfileService
     /// <summary>
     /// A list of available <see cref="GameProfile"/>\s.
     /// </summary>
-    public List<DsssGameProfileFileInfo> GameProfileFileList { get; private set; } = [];
+    public List<GameProfileFileInfo> GameProfileFileList { get; private set; } = [];
 
     /// <summary>
     /// An index of currently selected <see cref="GameProfile"/>.
@@ -50,20 +49,20 @@ public class DsssGameProfileService
     /// <summary>
     /// Currently loaded <see cref="GameProfile"/>.
     /// </summary>
-    public DsssGameProfile GameProfile { get; private set; } = new();
+    public GameProfile GameProfile { get; private set; } = new();
 
     /// <summary>
     /// Constructor.
     /// </summary>
     /// <param name="gameProfilesPath"></param>
-    public DsssGameProfileService(string gameProfilesPath)
+    public GameProfileService(string gameProfilesPath)
     {
         GameProfilesPath = gameProfilesPath;
         RefreshGameProfiles();
     }
-    
+
     private void RefreshGameProfiles()
-        => GameProfileFileList = Directory.GetFiles(GameProfilesPath, "*.bin", SearchOption.TopDirectoryOnly).Select(file => new DsssGameProfileFileInfo(file)).ToList();
+        => GameProfileFileList = Directory.GetFiles(GameProfilesPath, "*.bin", SearchOption.TopDirectoryOnly).Select(file => new GameProfileFileInfo(file)).ToList();
 
     /// <summary>
     /// Tries to load the game profile from the input file.
@@ -77,13 +76,13 @@ public class DsssGameProfileService
 
         // Make sure the selectedIndex is in bound.
         if (selectedIndex < 0 || selectedIndex > GameProfileFileList.Count) { failureReason = "File index out of bound"; goto ORDER_66; }
-        
+
         // Try to read file.
-        DsssGameProfileJson gpJson;
+        GameProfileJson gpJson;
         try
         {
             var jsonData = ReadFile(GameProfileFileList[selectedIndex].FullPath).Decrypto(Magic);
-            gpJson = JsonSerializer.Deserialize<DsssGameProfileJson>(jsonData)!;
+            gpJson = JsonSerializer.Deserialize<GameProfileJson>(jsonData)!;
         }
         catch { failureReason = "Invalid file"; goto ORDER_66; }
 
@@ -99,12 +98,12 @@ public class DsssGameProfileService
         if (gpJson.EncryptionTable is null) { failureReason = "EncryptionTable is null"; goto ORDER_66; }
         if (gpJson.GameTitle is null) { failureReason = "GameTitle is null"; goto ORDER_66; }
 
-        DsssGameProfile gp = new();
+        GameProfile gp = new();
 
         // Checks for the PC version.
         if (gpJson.Platform == (uint)PlatformsEnum.Pc)
         {
-            if (gpJson.SteamAppId is null) { failureReason = "GameTitle is null"; goto ORDER_66; } 
+            if (gpJson.SteamAppId is null) { failureReason = "GameTitle is null"; goto ORDER_66; }
             gp.SteamAppId = (uint)gpJson.SteamAppId;
         }
 
@@ -120,7 +119,7 @@ public class DsssGameProfileService
         GameProfileIndex = selectedIndex;
         return new BoolResult(true, "Successfully loaded the Game Profile.");
 
-        ORDER_66:
+    ORDER_66:
         return new BoolResult(false, $"Game Profile couldn't be loaded. {failureReason}.");
     }
 }
