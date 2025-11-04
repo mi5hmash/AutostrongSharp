@@ -1,475 +1,333 @@
 ﻿using AutostrongSharpCore.Helpers;
+using AutostrongSharpCore.Infrastructure;
 using AutostrongSharpCore.Models.DSSS.AutoStrong;
-using AutostrongSharpCore.Models.DSSS.AutoStrong.GameProfile;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using static AutostrongSharpCore.Helpers.IoHelpers;
-using static AutostrongSharpCore.Helpers.ISimpleMediator;
-using static AutostrongSharpCore.Helpers.SimpleLogger;
+using Mi5hmasH.Logger;
 
 namespace AutostrongSharpCore;
 
-public class Core
+public class Core(SimpleLogger logger, ProgressReporter progressReporter)
 {
-
-    #region PATHS
-
-    public static string RootPath => AppDomain.CurrentDomain.BaseDirectory;
-
-    private const string BackupFolder = "_BACKUP";
-    public static string BackupPath => Path.Combine(RootPath, BackupFolder);
-
-    private const string ProfilesFolder = "profiles";
-    public static string ProfilesPath => Path.Combine(RootPath, ProfilesFolder);
-
-    private static string PathPattern => @$"\{Path.DirectorySeparatorChar}(\d+)\{Path.DirectorySeparatorChar}(\d+)\{Path.DirectorySeparatorChar}remote\{Path.DirectorySeparatorChar}win64_save\{Path.DirectorySeparatorChar}?$";
-
-    #endregion
-
-    #region BACKUP
-
     /// <summary>
-    /// Determines if backup is enabled.
+    /// Gets the default instance of the automatic strong decryption utility for processing encrypted data.
     /// </summary>
-    public bool BackupEnabled { get; private set; } = true;
-
-    public void SetBackupEnabled(bool boolean)
-    {
-        if (IsBusy) return;
-        BackupEnabled = boolean;
-    }
-
-    public void ToggleBackupEnabled()
-    {
-        if (IsBusy) return;
-        BackupEnabled ^= true;
-    }
-
-    /// <summary>
-    /// Tries to make a backup of a file.
-    /// </summary>
-    /// <param name="simpleBackup"></param>
-    /// <param name="filePath"></param>
-    /// <returns></returns>
-    private static DialogAnswer MakeBackup(string filePath, SimpleBackup simpleBackup)
-    {
-        do
-        {
-            if (TryToMakeBackup(filePath, simpleBackup)) return DialogAnswer.Continue;
-            // ask the user if they want to try again
-            var dialogResult = _mediator.Ask($"""Failed to backup the file: "{filePath}".{Environment.NewLine}The file cannot be found, or a file with the same name exists in the target location and is used by another program.{Environment.NewLine}Would you like to try again?""", "Failed to backup the file", QuestionOptions.AbortRetryIgnore, DialogType.Exclamation);
-            if (dialogResult == DialogAnswer.Retry) continue;
-            return dialogResult;
-        } while (true);
-
-        static bool TryToMakeBackup(string filePath, SimpleBackup simpleBackup)
-        {
-            try
-            {
-                simpleBackup.Backup(filePath);
-            }
-            catch { return false; }
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Opens the Backup directory.
-    /// </summary>
-    public static void OpenBackupDirectory()
-        => OpenDirectory(BackupPath);
-
-    #endregion
-
-    #region BUSY_LOCK
-
-    public bool IsBusy { get; private set; }
-
-    #endregion
-
-    #region LOGGER
-
-    private readonly SimpleLogger _logger;
-
-    public void ActivateLogger() => _logger.NewLogFile();
-
-    #endregion
-
-    #region PROGRESS
-
-    private readonly IProgress<string> _pText;
-    private readonly IProgress<int> _pValue;
-
-    /// <summary>
-    /// Reports progress.
-    /// </summary>
-    /// <param name="text"></param>
-    /// <param name="value"></param>
-    private void ReportProgress(string text, int value)
-    {
-        _pText.Report(text);
-        _pValue.Report(value);
-    }
-
-    #endregion
-
-    #region GAME_PROFILE
-
-    private GameProfileService _gpService;
-    
-    public void SetNewGameProfile(int selectedIndex)
-    {
-        if (IsBusy) return;
-        var boolResult = _gpService.LoadGameProfile(selectedIndex, _deencryptor);
-        ReportProgress(boolResult.Description, 0);
-    }
-    public List<GameProfileFileInfo> GetGameProfileFileList() => _gpService.GameProfileFileList;
-    public int GetSelectedGameProfileFileIndex() => _gpService.GameProfileIndex;
-    public string GetGameProfileIcon() => _gpService.GameProfile.Base64AppIcon;
-    public uint GetGameProfileSteamAppId() => _gpService.GameProfile.SteamAppId;
-    private string GetGameUrl() => $"https://store.steampowered.com/app/{GetGameProfileSteamAppId()}/";
-
-    #endregion
-
-    #region CONSTRUCTOR
-    
-    private CancellationTokenSource _cts = new();
-    private static ISimpleMediator _mediator = null!;
-    private readonly AutoStrongDeencryptor _deencryptor = new();
+    public AutoStrongDeencryptor Deencryptor { get; } = new();
     
     /// <summary>
-    /// Constructs new <see cref="Core"/> class.
+    /// Creates a new ParallelOptions instance configured with the specified cancellation token and an optimal degree of parallelism for the current environment.
     /// </summary>
-    /// <param name="mediator"></param>
-    /// <param name="pText"></param>
-    /// <param name="pValue"></param>
-    /// <param name="logger"></param>
-    public Core(ISimpleMediator mediator, IProgress<string> pText, IProgress<int> pValue, SimpleLogger logger)
-    {
-        _mediator = mediator;
-        _pText = pText;
-        _pValue = pValue;
-        _logger = logger;
-        InputDirectory = RootPath;
-
-        // create directories
-        CreateDirectories();
-
-        // create _gpService
-        _gpService = new GameProfileService(ProfilesPath);
-    }
-    
-    #endregion
-
-    #region IO
-
-    /// <summary>
-    /// Creates necessary directories.
-    /// </summary>
-    private static void CreateDirectories()
-    {
-        Directory.CreateDirectory(ProfilesPath);
-        Directory.CreateDirectory(BackupPath);
-    }
-
-    /// <summary>
-    /// Checks whether the directory at the given path exists.
-    /// </summary>
-    /// <param name="directoryPath"></param>
-    /// <returns></returns>
-    private static bool DoesDirectoryExists(string directoryPath)
-    {
-        if (Directory.Exists(directoryPath)) return true;
-        _mediator.Inform($"""Directory: "{directoryPath}" does not exists.""", "Error", DialogType.Error);
-        return false;
-    }
-
-    /// <summary>
-    /// Tries to write an array of bytes to a file.
-    /// </summary>
-    /// <param name="filePath"></param>
-    /// <param name="fileData"></param>
-    /// <returns></returns>
-    private static DialogAnswer WriteBytesToFile(string filePath, byte[] fileData)
-    {
-        do
+    /// <param name="cts">The CancellationTokenSource whose token will be used to support cancellation of parallel operations.</param>
+    /// <returns>A ParallelOptions object initialized with the provided cancellation token and a maximum degree of parallelism based on the number of available processors.</returns>
+    private static ParallelOptions GetParallelOptions(CancellationTokenSource cts)
+        => new()
         {
-            if (WriteBinaryFile(filePath, fileData)) return DialogAnswer.Continue;
-            // ask the user if they want to try again
-            var dialogResult = _mediator.Ask($"""Failed to save the file: "{filePath}".{Environment.NewLine}It may be currently in use by another program.{Environment.NewLine}Would you like to try again?""", "Failed to save the file", QuestionOptions.AbortRetryIgnore, DialogType.Exclamation);
-            if (dialogResult == DialogAnswer.Retry) continue;
-            return dialogResult;
-        } while (true);
-    }
+            CancellationToken = cts.Token,
+            MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount - 1, 1)
+        };
 
     /// <summary>
-    /// Opens a game website in a default web browser.
+    /// Asynchronously decrypts all files in the specified input directory.
     /// </summary>
-    public void VisitGameWebsite()
-        => OpenWebsite(GetGameUrl());
-
-    #endregion
-
-    #region STEAM_ID
-
-    public uint SteamId { get; private set; }
+    /// <param name="inputDir">The path to the directory containing the files to decrypt.</param>
+    /// <param name="cts">A CancellationTokenSource that can be used to cancel the decryption operation.</param>
+    /// <returns>A task that represents the asynchronous decryption operation.</returns>
+    public async Task DecryptFilesAsync(string inputDir, CancellationTokenSource cts)
+        => await Task.Run(() => DecryptFiles(inputDir, cts));
 
     /// <summary>
-    /// Validates a <paramref name="steamId"/> string and sets the <see cref="SteamId"/> property.
+    /// Decrypts all encrypted files in the specified input directory and saves the decrypted files to a new output directory.
     /// </summary>
-    /// <param name="steamId"></param>
-    /// <param name="verbose"></param>
-    public void SetSteamId(string steamId, bool verbose = false)
-    { 
-        if (IsBusy) return;
-        var result = ulong.TryParse(steamId, out var parsed);
-        if (result) SteamId = (uint)parsed;
-        if (!verbose) ReportProgress(result ? "The entered SteamID is correct." : "The entered SteamID was invalid.", 0);
-    }
-
-    /// <summary>
-    /// Extracts SteamID from a directory path.
-    /// </summary>
-    /// <param name="directoryPath"></param>
-    private void ExtractSteamIdFromPathIfValid(string directoryPath)
+    /// <param name="inputDir">The path to the directory containing files to be decrypted. Only files with the expected encrypted file extension are processed.</param>
+    /// <param name="cts">A CancellationTokenSource used to cancel the decryption operation. If cancellation is requested, the method will stop processing remaining files.</param>
+    public void DecryptFiles(string inputDir, CancellationTokenSource cts)
     {
-        var match = Regex.Match(directoryPath, PathPattern);
-        if (match.Success) SetSteamId(match.Groups[1].Value, true);
-    }
-
-    #endregion
-
-    #region INPUT_DIRECTORY
-
-    public string InputDirectory { get; private set; }
-
-    /// <summary>
-    /// Validates a <paramref name="inputPath"/> string and sets the <see cref="InputDirectory"/> property.
-    /// </summary>
-    /// <param name="inputPath"></param>
-    public void SetInputDirectory(string inputPath)
-    {
-        if (IsBusy) return;
-
-        // checking for forbidden directory
-        if (IsForbiddenDirectory(BackupPath)) return;
-        
-        // checking if directory exists
-        var result = Directory.Exists(inputPath);
-        if (result)
-        {
-            InputDirectory = inputPath;
-            ExtractSteamIdFromPathIfValid(inputPath);
-        }
-        ReportProgress(result ? "The entered Input Folder Path is correct." : "The entered Input Folder Path was invalid.", 0);
-        return;
-
-        bool IsForbiddenDirectory(string path)
-        {
-            if (!inputPath.Contains(path)) return false;
-            _mediator.Inform($"The entered path:\n\"{path}\", \ncannot be used as the Input Folder Path. \nThe path has not been updated.", "Forbidden directory", DialogType.Exclamation);
-            return true;
-        }
-    }
-
-    #endregion
-
-    #region OPERATIONS
-
-    /// <summary>
-    /// Aborts currently running operation and lifts the Busy Lock.
-    /// </summary>
-    public void AbortOperation()
-    {
-        if (!IsBusy) return;
-        _cts.Cancel();
-        _cts.Dispose();
-        IsBusy = false;
-    }
-
-    private delegate void OperationDelegate(AutoStrongFile dsssFile);
-
-    private enum OperationType
-    {
-        Encryption,
-        Decryption,
-        Resigning
-    }
-
-    public Task DecryptAllAsync()
-        => ProcessAsyncOperation(OperationType.Decryption, DecryptAll);
-
-    public Task EncryptAllAsync()
-        => ProcessAsyncOperation(OperationType.Encryption, EncryptAll);
-
-    public Task ResignAllAsync()
-        => ProcessAsyncOperation(OperationType.Resigning, ResignAll);
-
-    private async Task ProcessAsyncOperation(OperationType operationType, OperationDelegate operationDelegate)
-    {
-        if (IsBusy) return;
-        IsBusy = true;
-        _cts = new CancellationTokenSource();
+        // GET FILES TO PROCESS
+        var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
+        if (filesToProcess.Length == 0) return;
+        // DECRYPT
+        logger.LogInfo($"Decrypting [{filesToProcess.Length}] files...");
+        // Create a new folder in OUTPUT directory
+        var outputDir = Directories.GetNewOutputDirectory("decrypted");
+        Directory.CreateDirectory(outputDir);
+        // Setup parallel options
+        var po = GetParallelOptions(cts);
+        // Process files in parallel
+        var progress = 0;
         try
         {
-            _logger.Log(LogSeverity.Information, $"{operationType} has started. Selected game profile: {_gpService.GameProfile.GameTitle}.");
-            _logger.Log(LogSeverity.Information, $"Provided Steam32_ID: {SteamId}");
-            _logger.Log(LogSeverity.Information, "ID | FileName | MD5_Checksum | IsEncrypted | Steam32_ID");
-            await AsyncOperation(operationType, operationDelegate);
-            _logger.Log(LogSeverity.Information, $"{operationType} complete.");
-        }
-        catch (OperationCanceledException)
-        {
-            var message = $"{operationType} was interrupted by the user.";
-            _pText.Report(message);
-            _logger.Log(LogSeverity.Warning, message);
-        }
-        AbortOperation();
-    }
-
-    private Task AsyncOperation(OperationType operationType, OperationDelegate operationDelegate)
-    {
-        return Task.Run(() =>
-        {
-            // check if input directory exists
-            if (!DoesDirectoryExists(InputDirectory)) return;
-            
-            // get the paths of "*.bin" files located in the input directory
-            var files = Directory.GetFiles(InputDirectory, "*.bin", SearchOption.TopDirectoryOnly);
-
-            // initialize backup
-            SimpleBackup simpleBackup = new(BackupPath);
-            if (files.Length > 0) simpleBackup.NewBackup();
-
-            ParallelOptions po = new()
+            Parallel.For((long)0, filesToProcess.Length, po, (ctr, _) =>
             {
-                CancellationToken = _cts.Token,
-                MaxDegreeOfParallelism = Environment.ProcessorCount - 1
-            };
+                while (true)
+                {
+                    var fileName = Path.GetFileName(filesToProcess[ctr]);
+                    var group = $"Task {ctr}";
 
-            var processedFiles = 0;
-            var progress = 0;
-            ReportProgress($"[{progress}/{files.Length}] Processing files...", progress);
-            
-            Parallel.For((long)0, files.Length, po, ctr =>
-            {
-                // try to load file
-                var dsssFile = new AutoStrongFile(_deencryptor);
-                var result = dsssFile.SetFileData(files[ctr]);
-                if (!result.Result)
-                {
-                    _logger.Log(LogSeverity.Error, $"I_{ctr} -> {result.Description}");
-                    goto ORDER_66;
-                }
-                
-                // check file integrity
-                result = dsssFile.DataHeader.CheckIntegrity(_deencryptor);
-                if (!result.Result)
-                {
-                    _logger.Log(LogSeverity.Error, $"I_{ctr} -> {result.Description}");
-                    goto ORDER_66;
-                }
-                
-                // log info about the input file
-                _logger.LogDebug(LogSeverity.Information, $"I_{ctr} | {Path.GetFileName(files[ctr])} | {Md5HashFromFile(files[ctr])} | {dsssFile.IsEncrypted()} | {dsssFile.DataHeader.GetSteamId(_deencryptor)}");
-
-                // check operation type and adjust to it
-                switch (operationType)
-                {
-                    case OperationType.Resigning:
-                        break;
-                    case OperationType.Decryption:
-                        if (!dsssFile.IsEncrypted())
-                        {
-                            _logger.Log(LogSeverity.Warning, $"I_{ctr} -> The file is already decrypted.");
-                            goto ORDER_66;
-                        }
-                        break;
-                    case OperationType.Encryption:
-                    default:
-                        if (dsssFile.IsEncrypted())
-                        {
-                            _logger.Log(LogSeverity.Warning, $"I_{ctr} -> The file is already encrypted.");
-                            goto ORDER_66;
-                        }
-                        break;
-                }
-                
-                // backup file
-                if (BackupEnabled)
-                {
-                    var backupResult = MakeBackup(files[ctr], simpleBackup);
-                    switch (backupResult)
+                    // Try to read file data
+                    byte[] data;
+                    try { data = File.ReadAllBytes(filesToProcess[ctr]); }
+                    catch (Exception ex)
                     {
-                        case DialogAnswer.Continue:
-                            break;
-                        case DialogAnswer.Abort:
-                            _cts.Cancel();
-                            goto ORDER_66;
-                        default:
-                            goto ORDER_66;
+                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to read the [{fileName}] file: {ex}", group);
+                        break; // Skip to the next file
                     }
+                    // Process file data
+                    var autoStrongFile = new AutoStrongFile(Deencryptor);
+                    try
+                    {
+                        autoStrongFile.SetFileData(data, true);
+                        if (!autoStrongFile.IsEncrypted)
+                        {
+                            logger.LogWarning($"[{progress}/{filesToProcess.Length}] The [{fileName}] file is not encrypted, skipping...", group);
+                            break; // Skip to the next file
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to process the [{fileName}] file data: {ex}", group);
+                        break; // Skip to the next file
+                    }
+                    // Try to decrypt file data
+                    try
+                    {
+                        logger.LogInfo($"[{progress}/{filesToProcess.Length}] Decrypting the [{fileName}] file...", group);
+                        autoStrongFile.DecryptFile();
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"Failed to decrypt the file: {ex.Message}", group);
+                        break; // Skip to the next file
+                    }
+                    // Try to save the decrypted file data
+                    try
+                    {
+                        var outputFilePath = Path.Combine(outputDir, fileName);
+                        var outputData = autoStrongFile.GetFileData();
+                        File.WriteAllBytes(outputFilePath, outputData);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"Failed to save the file: {ex}", group);
+                        break; // Skip to the next file
+                    }
+                    logger.LogInfo($"[{progress}/{filesToProcess.Length}] Decrypted the [{fileName}] file.", group);
+                    break;
                 }
-
-                // run operation
-                operationDelegate(dsssFile);
-
-                // save file
-                var fileData = dsssFile.GetFileData();
-                var writeResult = WriteBytesToFile(files[ctr], fileData.ToArray());
-                switch (writeResult)
-                {
-                    case DialogAnswer.Continue:
-                        processedFiles++;
-                        break;
-                    case DialogAnswer.Abort:
-                        _cts.Cancel();
-                        goto ORDER_66;
-                    default:
-                        goto ORDER_66;
-                }
-
-                // log info about the output file
-                _logger.LogDebug(LogSeverity.Information, $"O_{ctr} | {Path.GetFileName(files[ctr])} | {Md5HashFromFile(files[ctr])} | {dsssFile.IsEncrypted()} | {dsssFile.DataHeader.GetSteamId(_deencryptor)}");
-
-                ORDER_66:
                 Interlocked.Increment(ref progress);
-                ReportProgress($"[{progress}/{files.Length}] Processing files...", (int)((double)progress / files.Length * 100));
+                progressReporter.Report((int)((double)progress / filesToProcess.Length * 100));
             });
-            simpleBackup.FinalizeBackup();
-
-            var message = $"{operationType} done. Number of processed files: {processedFiles}.";
-            _logger.Log(LogSeverity.Information, message);
-            ReportProgress(message, 100);
-        });
-    }
-    private static void DecryptAll(AutoStrongFile dsssFile)
-    {
-        dsssFile.DecryptDataHeader();
-        dsssFile.DecryptData();
-    }
-
-    private static void EncryptAll(AutoStrongFile dsssFile)
-    {
-        dsssFile.EncryptDataHeader();
-        dsssFile.EncryptData();
-    }
-
-    private void ResignAll(AutoStrongFile dsssFile)
-    {
-        if (dsssFile.IsEncrypted())
-        {
-            dsssFile.DecryptDataHeader();
-            dsssFile.DataHeader.Steam32Id = SteamId;
-            dsssFile.EncryptDataHeader();
+            logger.LogInfo($"[{progress}/{filesToProcess.Length}] All tasks completed.");
         }
-        else
+        catch (OperationCanceledException ex)
         {
-            dsssFile.DataHeader.Steam32Id = SteamId;
-            dsssFile.EncryptDataHeader();
-            dsssFile.EncryptData();
+            logger.LogWarning(ex.Message);
+        }
+        finally
+        {
+            // Ensure progress is set to 100% at the end
+            progressReporter.Report(100);
         }
     }
-    
-    #endregion
+
+    /// <summary>
+    /// Asynchronously encrypts all files in the specified directory.
+    /// </summary>
+    /// <param name="inputDir">The path to the directory containing the files to encrypt.</param>
+    /// <param name="cts">A CancellationTokenSource used to cancel the encryption operation. If cancellation is requested, the operation will terminate early.</param>
+    /// <returns>A task that represents the asynchronous encryption operation.</returns>
+    public async Task EncryptFilesAsync(string inputDir, CancellationTokenSource cts)
+        => await Task.Run(() => EncryptFiles(inputDir, cts));
+
+    /// <summary>
+    /// Encrypts all files with the specified extension in the given input directory and saves the encrypted files to a new output directory.
+    /// </summary>
+    /// <param name="inputDir">The path to the directory containing files to be encrypted. Only files matching the required extension are processed.</param>
+    /// <param name="cts">A CancellationTokenSource used to cancel the encryption operation. If cancellation is requested, the process will terminate early.</param>
+    public void EncryptFiles(string inputDir, CancellationTokenSource cts)
+    {
+        // GET FILES TO PROCESS
+        var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
+        if (filesToProcess.Length == 0) return;
+        // ENCRYPT
+        logger.LogInfo($"Encrypting [{filesToProcess.Length}] files...");
+        // Create a new folder in OUTPUT directory
+        var outputDir = Directories.GetNewOutputDirectory("encrypted");
+        Directory.CreateDirectory(outputDir);
+        // Setup parallel options
+        var po = GetParallelOptions(cts);
+        // Process files in parallel
+        var progress = 0;
+        try
+        {
+            Parallel.For((long)0, filesToProcess.Length, po, (ctr, _) =>
+            {
+                while (true)
+                {
+                    var fileName = Path.GetFileName(filesToProcess[ctr]);
+                    var group = $"Task {ctr}";
+
+                    // Try to read file data
+                    byte[] data;
+                    try { data = File.ReadAllBytes(filesToProcess[ctr]); }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to read the [{fileName}] file: {ex}", group);
+                        break; // Skip to the next file
+                    }
+                    // Process file data
+                    var autoStrongFile = new AutoStrongFile(Deencryptor);
+                    try
+                    {
+                        autoStrongFile.SetFileData(data);
+                        if (autoStrongFile.IsEncrypted)
+                        {
+                            logger.LogWarning($"[{progress}/{filesToProcess.Length}] The [{fileName}] file is already encrypted, skipping...", group);
+                            break; // Skip to the next file
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to process the [{fileName}] file data: {ex}", group);
+                        break; // Skip to the next file
+                    }
+                    // Try to encrypt file data
+                    try
+                    {
+                        logger.LogInfo($"[{progress}/{filesToProcess.Length}] Encrypting the [{fileName}] file...", group);
+                        autoStrongFile.EncryptFile();
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"Failed to encrypt the file: {ex.Message}", group);
+                        break; // Skip to the next file
+                    }
+                    // Try to save the encrypted file data
+                    try
+                    {
+                        var outputFilePath = Path.Combine(outputDir, fileName);
+                        var outputData = autoStrongFile.GetFileData();
+                        File.WriteAllBytes(outputFilePath, outputData);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"Failed to save the file: {ex}", group);
+                        break; // Skip to the next file
+                    }
+                    logger.LogInfo($"[{progress}/{filesToProcess.Length}] Encrypted the [{fileName}] file.", group);
+                    break;
+                }
+                Interlocked.Increment(ref progress);
+                progressReporter.Report((int)((double)progress / filesToProcess.Length * 100));
+            });
+            logger.LogInfo($"[{progress}/{filesToProcess.Length}] All tasks completed.");
+        }
+        catch (OperationCanceledException ex)
+        {
+            logger.LogWarning(ex.Message);
+        }
+        finally
+        {
+            // Ensure progress is set to 100% at the end
+            progressReporter.Report(100);
+        }
+    }
+
+    /// <summary>
+    /// Asynchronously re-signs all eligible files in the specified input directory for the given user.
+    /// </summary>
+    /// <param name="inputDir">The path to the directory containing files to be re-signed. Must not be null or empty.</param>
+    /// <param name="userId">The identifier of the user for whom the files are being re-signed.</param>
+    /// <param name="cts">A cancellation token source that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous re-sign operation.</returns>
+    public async Task ResignFilesAsync(string inputDir, uint userId, CancellationTokenSource cts)
+        => await Task.Run(() => ResignFiles(inputDir, userId, cts));
+
+    /// <summary>
+    /// Processes and re-signs all eligible files in the specified input directory for the given user.
+    /// </summary>
+    /// <param name="inputDir">The path to the directory containing files to be re-signed. Only files with the required extension are processed.</param>
+    /// <param name="userId">The user ID to assign to each re-signed file.</param>
+    /// <param name="cts">A cancellation token source that can be used to cancel the operation before completion.</param>
+    public void ResignFiles(string inputDir, uint userId, CancellationTokenSource cts)
+    {
+        // GET FILES TO PROCESS
+        var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
+        if (filesToProcess.Length == 0) return;
+        // RE-SIGN
+        logger.LogInfo($"Re-signing [{filesToProcess.Length}] files...");
+        // Create a new folder in OUTPUT directory
+        var outputDir = Directories.GetNewOutputDirectory("resigned").AddUserIdAndSuffix(userId.ToString());
+        Directory.CreateDirectory(outputDir);
+        // Setup parallel options
+        var po = GetParallelOptions(cts);
+        // Process files in parallel
+        var progress = 0;
+        try
+        {
+            Parallel.For((long)0, filesToProcess.Length, po, (ctr, _) =>
+            {
+                while (true)
+                {
+                    var fileName = Path.GetFileName(filesToProcess[ctr]);
+                    var group = $"Task {ctr}";
+
+                    // Try to read file data
+                    byte[] data;
+                    try { data = File.ReadAllBytes(filesToProcess[ctr]); }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to read the [{fileName}] file: {ex}", group);
+                        break; // Skip to the next file
+                    }
+                    // Process file data
+                    var autoStrongFile = new AutoStrongFile(Deencryptor);
+                    try { autoStrongFile.SetFileData(data); }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to process the [{fileName}] file data: {ex}", group);
+                        break; // Skip to the next file
+                    }
+                    autoStrongFile.DataHeader.SetUserId(userId, Deencryptor);
+                    if (!autoStrongFile.IsEncrypted)
+                    {
+                        // Try to encrypt file data
+                        try
+                        {
+                            logger.LogInfo($"[{progress}/{filesToProcess.Length}] Encrypting the [{fileName}] file...", group);
+                            autoStrongFile.EncryptFile();
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError($"Failed to encrypt the file: {ex.Message}", group);
+                            break; // Skip to the next file
+                        }
+                    }
+                    // Try to save the encrypted file data
+                    try
+                    {
+                        var outputFilePath = Path.Combine(outputDir, fileName);
+                        var outputData = autoStrongFile.GetFileData();
+                        File.WriteAllBytes(outputFilePath, outputData);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"Failed to save the file: {ex}", group);
+                        break; // Skip to the next file
+                    }
+                    logger.LogInfo($"[{progress}/{filesToProcess.Length}] Re-signed the [{fileName}] file.", group);
+                    break;
+                }
+                Interlocked.Increment(ref progress);
+                progressReporter.Report((int)((double)progress / filesToProcess.Length * 100));
+            });
+            logger.LogInfo($"[{progress}/{filesToProcess.Length}] All tasks completed.");
+        }
+        catch (OperationCanceledException ex)
+        {
+            logger.LogWarning(ex.Message);
+        }
+        finally
+        {
+            // Ensure progress is set to 100% at the end
+            progressReporter.Report(100);
+        }
+    }
 }

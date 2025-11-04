@@ -1,27 +1,24 @@
 ﻿using AutostrongSharpCore.Helpers;
-using System.Runtime.InteropServices;
 
 namespace AutostrongSharpCore.Models.DSSS.AutoStrong;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 0x20)]
 public class AutoStrongDataHeader
 {
-    private uint _fileFormat1 = 0x5353_5344;
-    private uint _fileFormat2 = 0x5353_5344;
-    private uint _steam32Id = 0x0000_0001;
-    private uint _unknown1;
-    private uint _unknown2 = 0x0511_4CB5;
-    private uint _unknown3 = 0x0000_0035;
-    private uint _unknown4 = 0xF627_F2FD;
-    private uint _unknown5 = 0xE15F_B3A5;
+    public const int Size = 0x20;
+    private const uint Dsss = 0x5353_5344;
+
+    /// <summary>
+    /// Readonly buffer.
+    /// </summary>
+    private readonly uint[] _data = [Dsss, Dsss, 0x0000_0001, 0, 0x0511_4CB5, 0x0000_0035, 0xF627_F2FD, 0xE15F_B3A5];
 
     /// <summary>
     /// This should be the ANSI for "DSSS", or 0x5353_5344.
     /// </summary>
     public uint FileFormat1
     {
-        get => _fileFormat1;
-        set => _fileFormat1 = value;
+        get => _data[0];
+        set => _data[0] = value;
     }
 
     /// <summary>
@@ -29,17 +26,17 @@ public class AutoStrongDataHeader
     /// </summary>
     public uint FileFormat2
     {
-        get => _fileFormat2;
-        set => _fileFormat2 = value;
+        get => _data[1];
+        set => _data[1] = value;
     }
 
     /// <summary>
-    /// Holds Steam User ID in the Steam32_ID format.
+    /// Holds User ID.
     /// </summary>
-    public uint Steam32Id
+    public uint UserId
     {
-        get => _steam32Id;
-        set => _steam32Id = value;
+        get => _data[2];
+        set => _data[2] = value;
     }
 
     /// <summary>
@@ -47,8 +44,8 @@ public class AutoStrongDataHeader
     /// </summary>
     public uint Unknown1
     {
-        get => _unknown1;
-        set => _unknown1 = value;
+        get => _data[3];
+        set => _data[3] = value;
     }
 
     /// <summary>
@@ -56,8 +53,8 @@ public class AutoStrongDataHeader
     /// </summary>
     public uint Unknown2
     {
-        get => _unknown2;
-        set => _unknown2 = value;
+        get => _data[4];
+        set => _data[4] = value;
     }
 
     /// <summary>
@@ -65,8 +62,8 @@ public class AutoStrongDataHeader
     /// </summary>
     public uint Unknown3
     {
-        get => _unknown3;
-        set => _unknown3 = value;
+        get => _data[5];
+        set => _data[5] = value;
     }
 
     /// <summary>
@@ -74,8 +71,8 @@ public class AutoStrongDataHeader
     /// </summary>
     public uint Unknown4
     {
-        get => _unknown4;
-        set => _unknown4 = value;
+        get => _data[6];
+        set => _data[6] = value;
     }
 
     /// <summary>
@@ -83,86 +80,92 @@ public class AutoStrongDataHeader
     /// </summary>
     public uint Unknown5
     {
-        get => _unknown5;
-        set => _unknown5 = value;
+        get => _data[7];
+        set => _data[7] = value;
     }
+    
+    /// <summary>
+    /// Copies the specified sequence of 32-bit unsigned integers into the internal data buffer.
+    /// </summary>
+    /// <param name="data">A read-only span of 32-bit unsigned integers containing the data to copy. The number of elements copied is limited to the buffer size.</param>
+    public void SetData(ReadOnlySpan<uint> data) 
+        => data[..(Size / sizeof(uint))].CopyTo(_data);
 
     /// <summary>
-    /// Create a parameter-less <see cref="AutoStrongHeader"/>.
+    /// Returns the array of unsigned integer data currently held by the instance.
     /// </summary>
-    public AutoStrongDataHeader() { }
+    /// <returns>An array of <see cref="uint"/> values representing the current data.</returns>
+    public uint[] GetData()
+        => _data;
 
     /// <summary>
-    /// Create a <see cref="AutoStrongHeader"/> with given parameters.
+    /// Returns a read-only span over the underlying sequence of unsigned integer data.
     /// </summary>
-    /// <param name="steam32Id"></param>
-    /// <param name="unknown1"></param>
-    /// <param name="unknown2"></param>
-    /// <param name="unknown3"></param>
-    /// <param name="unknown4"></param>
-    /// <param name="unknown5"></param>
-    public AutoStrongDataHeader(uint steam32Id, uint unknown1, uint unknown2, uint unknown3, uint unknown4, uint unknown5)
-    {
-        Steam32Id = steam32Id;
-        Unknown1 = unknown1;
-        Unknown2 = unknown2;
-        Unknown3 = unknown3;
-        Unknown4 = unknown4;
-        Unknown5 = unknown5;
-    }
+    /// <returns>A <see cref="ReadOnlySpan{uint}"/> representing the current data. The span reflects the contents at the time of the call and is valid only while the underlying data remains unchanged.</returns>
+    public ReadOnlySpan<uint> GetDataAsSpan()
+        => _data.AsSpan();
 
     /// <summary>
     /// Decrypts <see cref="AutoStrongDataHeader"/>.
     /// </summary>
-    public void DecryptData(AutoStrongDeencryptor dsssDeencryptor)
-    {
-        dsssDeencryptor.Decrypt(ref _fileFormat1, ref _fileFormat2);
-        dsssDeencryptor.Decrypt(ref _steam32Id, ref _unknown1);
-        dsssDeencryptor.Decrypt(ref _unknown2, ref _unknown3);
-        dsssDeencryptor.Decrypt(ref _unknown4, ref _unknown5);
-    }
+    /// <param name="deencryptor">The deencryptor instance used to perform the decryption.</param>
+    public void Decrypt(AutoStrongDeencryptor deencryptor)
+        => deencryptor.DecryptHeader(_data);
 
     /// <summary>
     /// Encrypts <see cref="AutoStrongDataHeader"/>.
     /// </summary>
-    public void EncryptData(AutoStrongDeencryptor dsssDeencryptor)
-    {
-        dsssDeencryptor.Encrypt(ref _fileFormat1, ref _fileFormat2);
-        dsssDeencryptor.Encrypt(ref _steam32Id, ref _unknown1);
-        dsssDeencryptor.Encrypt(ref _unknown2, ref _unknown3);
-        dsssDeencryptor.Encrypt(ref _unknown4, ref _unknown5);
-    }
+    /// <param name="deencryptor">The deencryptor instance used to perform the encryption.</param>
+    public void Encrypt(AutoStrongDeencryptor deencryptor)
+        => deencryptor.EncryptHeader(_data);
 
     /// <summary>
     /// Returns true if file is Encrypted.
     /// </summary>
     /// <returns></returns>
-    public bool IsEncrypted() => FileFormat1 != 0x5353_5344 || FileFormat2 != 0x5353_5344;
+    public bool IsEncrypted() => FileFormat1 != Dsss || FileFormat2 != Dsss;
 
     /// <summary>
-    /// Gets decrypted <see cref="Steam32Id"/>.
+    /// Retrieves the user identifier, optionally decrypting it using the provided deencryptor.
     /// </summary>
-    /// <param name="dsssDeencryptor"></param>
-    /// <returns></returns>
-    public uint GetSteamId(AutoStrongDeencryptor dsssDeencryptor)
+    /// <param name="deencryptor">The deencryptor instance used to perform the deencryption.</param>
+    /// <returns>The user identifier as an unsigned integer. If the data is not encrypted, returns the stored user identifier; otherwise, returns the decrypted value.</returns>
+    public uint GetUserId(AutoStrongDeencryptor deencryptor)
     {
-        var sid = _steam32Id;
-        var unk = _unknown1;
-        if (IsEncrypted()) dsssDeencryptor.Decrypt(ref sid, ref unk);
-        return sid;
+        if (!IsEncrypted()) return UserId;
+        var dataSpan = _data.AsSpan(2, 2);
+        deencryptor.DecryptHeader(dataSpan);
+        return dataSpan[0];
     }
 
     /// <summary>
-    /// Returns false if file is not supported.
+    /// Sets the user identifier, updating the encrypted or unencrypted value as appropriate.
     /// </summary>
-    /// <param name="dsssDeencryptor"></param>
-    /// <returns></returns>
-    public BoolResult CheckIntegrity(AutoStrongDeencryptor dsssDeencryptor)
+    /// <param name="newUserId">The new user identifier to assign. This value will be stored in encrypted form if encryption is enabled.</param>
+    /// <param name="deencryptor">The deencryptor instance used to perform the deencryption.</param>
+    public void SetUserId(uint newUserId, AutoStrongDeencryptor deencryptor)
     {
-        var ff1 = _fileFormat1;
-        var ff2 = _fileFormat2;
-        if (IsEncrypted()) dsssDeencryptor.Decrypt(ref ff1, ref ff2);
-        if (ff1 != 0x5353_5344 || ff2 != 0x5353_5344) return new BoolResult(false, "File is not compatible with the selected game profile.");
-        return new BoolResult(true);
+        if (!IsEncrypted())
+        {
+            UserId = newUserId;
+            return;
+        }
+        var dataSpan = _data.AsSpan(2,2);
+        deencryptor.DecryptHeader(dataSpan);
+        dataSpan[0] = newUserId;
+        deencryptor.EncryptHeader(dataSpan);
+    }
+
+    /// <summary>
+    /// Verifies the integrity of the encrypted file using the provided deencryptor.</summary>
+    /// /// <param name="deencryptor">The deencryptor instance used to perform the decryption.</param>
+    /// <exception cref="InvalidDataException">Thrown when the file is not compatible with the selected game profile after decryption.</exception>
+    public void CheckIntegrity(AutoStrongDeencryptor deencryptor)
+    {
+        if (!IsEncrypted()) return;
+        Span<uint> dataSpan = [FileFormat1, FileFormat2];
+        deencryptor.DecryptHeader(dataSpan);
+        if (dataSpan[0] != Dsss || dataSpan[1] != Dsss)
+            throw new InvalidDataException("File is not compatible with the selected game profile.");
     }
 }

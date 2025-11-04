@@ -2,79 +2,112 @@
 
 namespace AutostrongSharpCore.Models.DSSS.AutoStrong;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 0x10)]
 public class AutoStrongHeader
 {
+    public const int Size = 0x10;
+    private const uint Dsss = 0x5353_5344;
+    private const uint ExpectedEncryptionType = 0x3;
+
     /// <summary>
-    /// This should be the ANSI for "DSSS", or 0x5353_5344.
+    /// Readonly buffer.
     /// </summary>
-    public uint FileFormat { get; set; } = 0x5353_5344;
+    private readonly uint[] _data = [Dsss, 0x2, ExpectedEncryptionType, ExpectedEncryptionType];
+
+    /// <summary>
+    /// Gets or sets the magic number used to identify or validate the data format.
+    /// </summary>
+    public uint MagicNumber
+    {
+        get => _data[0];
+        set => _data[0] = value;
+    }
 
     /// <summary>
     /// Don't know what's there.
     /// </summary>
-    public uint Unknown1 { get; set; } = 0x2;
+    public uint Unknown1
+    {
+        get => _data[1];
+        set => _data[1] = value;
+    }
 
     /// <summary>
     /// Save File encryption type.
     /// Possible values: 2:None; 3:AutoStrong; ?:XOR; ?:BlowFish; 4:Citrus; 16:Lime|Mandarin; ?:RdsModule
     /// </summary>
-    public uint EncryptionType { get; set; } = 0x3;
+    public uint EncryptionType
+    {
+        get => _data[2];
+        set => _data[2] = value;
+    }
 
     /// <summary>
     /// Don't know what's there.
     /// </summary>
-    public uint Unknown2 { get; set; } = 0x3;
-
-    /// <summary>
-    /// Create a parameter-less <see cref="AutoStrongHeader"/>.
-    /// </summary>
-    public AutoStrongHeader() { }
-
-    /// <summary>
-    /// Create a <see cref="AutoStrongHeader"/> with given parameters.
-    /// </summary>
-    /// <param name="unknown1"></param>
-    /// <param name="encryptionType"></param>
-    /// <param name="unknown2"></param>
-    public AutoStrongHeader(uint unknown1, uint encryptionType, uint unknown2)
+    public uint Unknown2
     {
-        Unknown1 = unknown1;
-        EncryptionType = encryptionType;
-        Unknown2 = unknown2;
-    }
-    
-    /// <summary>
-    /// Checks if given <paramref name="fileFormat"/> makes sense.
-    /// </summary>
-    /// <param name="fileFormat"></param>
-    /// <returns></returns>
-    public BoolResult CheckFileFormat(uint? fileFormat = null)
-    {
-        fileFormat ??= FileFormat;
-        return fileFormat != 0x5353_5344 ? new BoolResult(false, "Invalid file header!") : new BoolResult(true);
+        get => _data[3];
+        set => _data[3] = value;
     }
 
     /// <summary>
-    /// Checks if given <paramref name="encryptionType"/> makes sense.
+    /// Copies the contents of the specified read-only span into the internal data buffer, casting each element to an unsigned 32-bit integer.
     /// </summary>
-    /// <param name="encryptionType"></param>
-    /// <returns></returns>
-    public BoolResult CheckEncryptionType(uint? encryptionType = null)
+    /// <typeparam name="T">The unmanaged type of the elements in the input span to be copied.</typeparam>
+    /// <param name="data">A read-only span containing the data to copy.</param>
+    /// <exception cref="InvalidDataException">Thrown if the file's magic number or encryption type is invalid.</exception>
+    public void SetData<T>(ReadOnlySpan<T> data) where T : unmanaged
+    {
+        var dataSpan = MemoryMarshal.Cast<T, uint>(data);
+        dataSpan[..(Size / sizeof(uint))].CopyTo(_data);
+        CheckIntegrity();
+    }
+
+    /// <summary>
+    /// Returns the array of unsigned integer data currently held by the instance.
+    /// </summary>
+    /// <returns>An array of <see cref="uint"/> values representing the current data.</returns>
+    public uint[] GetData()
+        => _data;
+
+    /// <summary>
+    /// Returns a read-only span over the underlying sequence of unsigned integers.
+    /// </summary>
+    /// <returns>A <see cref="ReadOnlySpan{uint}"/> representing the current data. The span reflects the contents at the time of the call and is valid only while the underlying data remains unchanged.</returns>
+    public ReadOnlySpan<uint> GetDataAsSpan()
+        => _data.AsSpan();
+
+    /// <summary>
+    /// Determines whether the specified magic number does not match the expected value.
+    /// </summary>
+    /// <param name="magicNumber">The magic number to check.</param>
+    /// <returns><see langword="true"/> if the magic number does not equal the expected value; otherwise, <see langword="false"/>.</returns>
+    public bool CheckMagicNumber(uint? magicNumber = null)
+    {
+        magicNumber ??= MagicNumber;
+        return magicNumber == Dsss;
+    }
+
+    /// <summary>
+    /// Determines whether the specified encryption type is not equal to AutoStrong encryption type.
+    /// </summary>
+    /// <param name="encryptionType">The encryption type to check.</param>
+    /// <returns><see langword="true"/> if the encryption type is not AutoStrong encryption type; otherwise, <see langword="false"/>.</returns>
+    public bool CheckEncryptionType(uint? encryptionType = null)
     {
         encryptionType ??= EncryptionType;
-        return encryptionType != 0x3 ? new BoolResult(false, "Invalid file encryption type!") : new BoolResult(true);
+        return encryptionType == ExpectedEncryptionType;
     }
 
     /// <summary>
-    /// Checks the integrity of <see cref="AutoStrongHeader"/>.
+    /// Checks the integrity of the file by validating its magic number and encryption type.
     /// </summary>
-    /// <returns></returns>
-    public BoolResult CheckIntegrity()
+    /// <exception cref="InvalidDataException">Thrown if the file's magic number or encryption type is invalid.</exception>
+    public void CheckIntegrity()
     {
-        var result = CheckFileFormat();
-        if (!result.Result) return result;
+        var result = CheckMagicNumber();
+        if (!result) throw new InvalidDataException("Invalid file magic number.");
         result = CheckEncryptionType();
-        return result;
+        if (!result) throw new InvalidDataException("Invalid file encryption type.");
     }
 }

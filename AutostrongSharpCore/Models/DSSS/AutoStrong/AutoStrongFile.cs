@@ -1,14 +1,28 @@
-﻿using AutostrongSharpCore.Helpers;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
+using AutostrongSharpCore.Helpers;
 
 namespace AutostrongSharpCore.Models.DSSS.AutoStrong;
 
+/// <summary>
+/// Represents a file that uses the AutoStrong encryption format, providing access to its headers, data, signature, and encryption operations.
+/// </summary>
+/// <param name="deencryptor">The AutoStrong decryption service used to decrypt and encrypt file data.</param>
 public class AutoStrongFile(AutoStrongDeencryptor deencryptor)
 {
     /// <summary>
+    /// File extension of the <see cref="AutoStrongFile"/>.
+    /// </summary>
+    public const string FileExtension = ".bin";
+
+    /// <summary>
+    /// Gets the AutoStrong deencryption service used to deencrypt data.
+    /// </summary>
+    public AutoStrongDeencryptor Deencryptor { get; } = deencryptor;
+
+    /// <summary>
     /// Header of the <see cref="AutoStrongFile"/>.
     /// </summary>
-    public AutoStrongHeader AutoStrongHeader { get; set; } = new();
+    public AutoStrongHeader Header { get; set; } = new();
 
     /// <summary>
     /// DataHeader of the <see cref="AutoStrongFile"/>.
@@ -21,153 +35,153 @@ public class AutoStrongFile(AutoStrongDeencryptor deencryptor)
     public uint[] Data { get; set; } = [];
 
     /// <summary>
-    /// Footer of the <see cref="AutoStrongFile"/>.
+    /// A signature of the <see cref="AutoStrongFile"/>.
     /// </summary>
-    public AutoStrongFooter AutoStrongFooter { get; set; } = new();
+    public uint Signature { get; set; } = 0x4835_494D;
 
     /// <summary>
-    /// Deencryptor instance.
+    /// Stores the encryption state of the current file.
     /// </summary>
-    public AutoStrongDeencryptor Deencryptor { get; } = deencryptor;
-    
+    public bool IsEncrypted { get; private set; }
+
     /// <summary>
-    /// Loads a '*.bin' archive of <see cref="AutoStrongFile"/> type into the existing object.
+    /// Parses and sets the file data from the specified byte span, updating the header, data header, main data, and signature fields.
     /// </summary>
-    /// <param name="filePath"></param>
-    /// <returns></returns>
-    public BoolResult SetFileData(string filePath)
+    /// <param name="data">A read-only span of bytes containing the file data to be parsed and set.</param>
+    /// <param name="encryptedFilesOnly">If <see langword="true"/>, only encrypted files will be processed; otherwise, both encrypted and unencrypted files are accepted.</param>
+    /// <exception cref="InvalidDataException">Thrown when the provided data is invalid or cannot be parsed into the expected file structure.</exception>
+    public void SetFileData(ReadOnlySpan<byte> data, bool encryptedFilesOnly = false)
     {
-        FileStream fs;
-        try { fs = File.OpenRead(filePath); }
-        catch { return new BoolResult(false, "Couldn't load the file. Error on trying to open the file."); }
-
-        using BinReader br = new(fs);
-        try
-        {
-            // try to load header data into the AutoStrongHeader
-            AutoStrongHeader = br.ReadStruct<AutoStrongHeader>() ?? throw new NullReferenceException();
-        }
-        catch { return new BoolResult(false, "Couldn't load the file. Invalid file header structure."); }
-
-        var test = AutoStrongHeader.CheckIntegrity();
-        if (!test.Result) return new BoolResult(test.Result, $"Couldn't load the file. {test.Description}");
-
-        try
-        {
-            // try to load data header data into the DataHeader
-            DataHeader = br.ReadStruct<AutoStrongDataHeader>() ?? throw new NullReferenceException();
-        }
-        catch { return new BoolResult(false, "Couldn't load the file. Invalid file data header structure."); }
-
-        test = AutoStrongHeader.CheckIntegrity();
-        if (!test.Result) return new BoolResult(test.Result, $"Couldn't load the file. {test.Description}");
-
-        var dataLength = fs.Length - (Marshal.SizeOf<AutoStrongHeader>() + Marshal.SizeOf<AutoStrongDataHeader>() + Marshal.SizeOf<AutoStrongFooter>());
-        var dataSize = dataLength / Marshal.SizeOf<uint>();
-
-        // load data
-        Data = new uint[dataSize];
-        for (var i = 0; i < dataSize; i++)
-        {
-            Data[i] = br.ReadUInt32();
-        }
-
-        try
-        {
-            // try to load footer data into the AutoStrongFooter
-            AutoStrongFooter = br.ReadStruct<AutoStrongFooter>() ?? throw new NullReferenceException();
-        }
-        catch { return new BoolResult(false, "Couldn't load the file. Invalid file footer structure."); }
-
-        return new BoolResult(true);
+        IsEncrypted = false;
+        var dataAsInts = MemoryMarshal.Cast<byte, uint>(data);
+        // HEADER
+        // try to load header data into the Header
+        try { Header.SetData(dataAsInts); }
+        catch (Exception e) { throw new InvalidDataException(e.Message); }
+        // DATA HEADER
+        // try to load data header data into the DataHeader
+        var position = AutoStrongHeader.Size / sizeof(uint);
+        try { DataHeader.SetData(dataAsInts.Slice(position, AutoStrongDataHeader.Size / sizeof(uint))); }
+        catch (Exception e) { throw new InvalidDataException(e.Message); }
+        // check if file is encrypted
+        IsEncrypted = DataHeader.IsEncrypted();
+        if (encryptedFilesOnly && !IsEncrypted) return;
+        // DATA
+        position += AutoStrongDataHeader.Size / sizeof(uint);
+        Data = dataAsInts.Slice(position, dataAsInts.Length - (position + Marshal.SizeOf(Signature) / sizeof(uint))).ToArray();
+        // FOOTER
+        Signature = dataAsInts[^1];
     }
 
     /// <summary>
-    /// Get an existing object of a <see cref="AutoStrongFile"/> type as byte array.
+    /// Generates and returns the complete file data, including headers, content, and signature, in binary format.
     /// </summary>
-    /// <returns></returns>
-    public ReadOnlySpan<byte> GetFileData()
+    /// <returns>A byte array containing the assembled file data.</returns>
+    public byte[] GetFileData()
     {
+        // prepare memory stream and binary writer
         using MemoryStream ms = new();
-        using BinWriter bw = new(ms);
+        using BinaryWriter bw = new(ms);
         // write DSSS HEADER content
-        bw.WriteStruct(AutoStrongHeader);
+        var data = MemoryMarshal.Cast<uint, byte>(Header.GetDataAsSpan());
+        bw.Write(data);
         // write DSSS DATA HEADER content
-        bw.WriteStruct(DataHeader);
+        data = MemoryMarshal.Cast<uint, byte>(DataHeader.GetDataAsSpan());
+        bw.Write(data);
         // write DSSS DATA content
-        foreach (var data in Data) bw.Write(data);
+        data = MemoryMarshal.Cast<uint, byte>(Data.AsSpan());
+        bw.Write(data);
         // write DSSS FOOTER content
-        bw.WriteStruct(AutoStrongFooter);
+        bw.Write(Signature);
 
-        var dataAsBytes = ms.ToArray().AsSpan();
-        var dataAsInts = MemoryMarshal.Cast<byte, uint>(dataAsBytes);
+        var dataAsBytes = ms.ToArray();
+        var dataSpan = dataAsBytes.AsSpan();
 
         // sign file
-        SignFile(ref dataAsInts);
+        SignFile(ref dataSpan);
 
         // return data
         return dataAsBytes;
     }
-
-    /// <summary>
-    /// Decrypts the <see cref="DataHeader"/>.
-    /// </summary>
-    public void DecryptDataHeader() => DataHeader.DecryptData(Deencryptor);
-
-    /// <summary>
-    /// Encrypts the <see cref="DataHeader"/>.
-    /// </summary>
-    public void EncryptDataHeader() => DataHeader.EncryptData(Deencryptor);
-
-    /// <summary>
-    /// Returns true if the <see cref="DataHeader"/> is Encrypted.
-    /// </summary>
-    /// <returns></returns>
-    public bool IsEncrypted() => DataHeader.IsEncrypted();
-
-    /// <summary>
-    /// Decrypts <see cref="Data"/>.
-    /// </summary>
-    public void DecryptData()
-    {
-        Queue<uint> queue = new();
-        queue.Enqueue(0);
-        queue.Enqueue(0);
-
-        for (long i = 4; i < Data.LongLength-1; i+=2)
-        {
-            queue.Enqueue(Data[i]);
-            queue.Enqueue(Data[i + 1]);
-            Deencryptor.Decrypt(ref Data[i], ref Data[i + 1]);
-            Data[i] ^= queue.Dequeue();
-            Data[i+1] ^= queue.Dequeue();
-        }
-    }
-
-    /// <summary>
-    /// Encrypts <see cref="Data"/>.
-    /// </summary>
-    public void EncryptData()
-    {
-        Queue<uint> queue = new();
-        queue.Enqueue(0);
-        queue.Enqueue(0);
-
-        for (long i = 4; i < Data.LongLength - 1; i += 2)
-        {
-            Data[i] ^= queue.Dequeue();
-            Data[i + 1] ^= queue.Dequeue();
-            Deencryptor.Encrypt(ref Data[i], ref Data[i + 1]);
-            queue.Enqueue(Data[i]);
-            queue.Enqueue(Data[i + 1]);
-        }
-    }
     
     /// <summary>
-    /// This method signs a DSSS file.
-    /// Thanks to windwakr (https://github.com/windwakr) for identifying this hashing method as MurmurHash3_32.
+    /// Decrypts the file data and updates the encryption state to reflect the current status.
     /// </summary>
-    /// <param name="fileData"></param>
-    private static void SignFile(ref Span<uint> fileData)
-        => fileData[^1] = SimpleDeencryptor.Murmur3_32(fileData[..^1], 0xFFFFFFFF);
+    public void DecryptFile()
+    {
+        // Decrypt DataHeader
+        DataHeader.Decrypt(Deencryptor);
+        // Decrypt Data
+        Deencryptor.DecryptData(Data);
+        // update encryption state
+        IsEncrypted = DataHeader.IsEncrypted();
+    }
+
+    /// <summary>
+    /// Encrypts the file data and updates the encryption state.
+    /// </summary>
+    public void EncryptFile()
+    {
+        // Encrypt DataHeader
+        DataHeader.Encrypt(Deencryptor);
+        // Encrypt Data
+        Deencryptor.EncryptData(Data);
+        // update encryption state
+        IsEncrypted = DataHeader.IsEncrypted();
+    }
+
+    /// <summary>
+    /// Computes a 32-bit Murmur3 hash for the specified sequence of unsigned integers.
+    /// </summary>
+    /// <param name="data">The input data to hash, represented as a read-only span of 32-bit unsigned integers.</param>
+    /// <param name="seed">An optional seed value to initialize the hash computation. Using different seeds produces different hash results for the same input data.</param>
+    /// <returns>A 32-bit unsigned integer containing the computed Murmur3 hash of the input data.</returns>
+    private static uint Murmur3_32(ReadOnlySpan<uint> data, uint seed = 0)
+    {
+        const uint hash0 = 0x1B873593;
+        const uint hash1 = 0xCC9E2D51;
+        const uint hash2 = 0x052250EC;
+        const uint hash3 = 0xC2B2AE35;
+        const uint hash4 = 0x85EBCA6B;
+
+        const byte rotation1 = 0xD;
+        const byte rotation2 = 0xF;
+        const byte shift1 = 0x10;
+
+        var lengthInBytes = data.Length * sizeof(uint);
+
+        foreach (var e in data)
+            seed = 5 * (uint.RotateLeft((hash0 * uint.RotateLeft(hash1 * e, rotation2)) ^ seed, rotation1) - hash2);
+
+        uint mod0 = 0;
+        switch (lengthInBytes & 3)
+        {
+            case 3:
+                mod0 = data[2] << shift1;
+                goto case 2;
+            case 2:
+                mod0 ^= data[1] << 8;
+                goto case 1;
+            case 1:
+                seed ^= hash0 * uint.RotateLeft(hash1 * (mod0 ^ data[0]), rotation2);
+                break;
+        }
+
+        var basis = (uint)(lengthInBytes ^ seed);
+        var hiWordOfBasis = (basis >> shift1) & 0xFFFF;
+
+        return (hash3 * ((hash4 * (basis ^ hiWordOfBasis)) ^ ((hash4 * (basis ^ hiWordOfBasis)) >> rotation1))) ^ ((hash3 * ((hash4 * (basis ^ hiWordOfBasis)) ^ ((hash4 * (basis ^ hiWordOfBasis)) >> rotation1))) >> shift1);
+    }
+
+    /// <summary>
+    /// Calculates and writes a Murmur3 hash signature to the end of the specified file data buffer.
+    /// </summary>
+    /// <remarks>Thanks to windwakr (https://github.com/windwakr) for identifying this hashing method as MurmurHash3_32.</remarks>
+    /// <typeparam name="T">The value type of each element in the file data buffer.</typeparam>
+    /// <param name="fileData">A span representing the file data to be signed. The signature will be written to the last element of this span.</param>
+    private static void SignFile<T>(ref Span<T> fileData) where T : struct
+    {
+        var span = MemoryMarshal.Cast<T, uint>(fileData);
+        span[^1] = Murmur3_32(span[..^1], 0xFFFFFFFF);
+    }
 }
