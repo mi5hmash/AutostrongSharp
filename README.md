@@ -1,24 +1,31 @@
-[![License: Unlicense](https://img.shields.io/badge/License-Unlicense-blueviolet.svg)](https://opensource.org/licenses/Unlicense)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blueviolet.svg)](https://opensource.org/license/mit)
 [![Release Version](https://img.shields.io/github/v/tag/mi5hmash/AutostrongSharp?label=Version)](https://github.com/mi5hmash/AutostrongSharp/releases/latest)
-[![Visual Studio 2022](https://custom-icon-badges.demolab.com/badge/Visual%20Studio%202022-5C2D91.svg?&logo=visual-studio&logoColor=white)](https://visualstudio.microsoft.com/)
-[![.NET8](https://img.shields.io/badge/.NET%208-512BD4?logo=dotnet&logoColor=fff)](#)
+[![Visual Studio 2026](https://custom-icon-badges.demolab.com/badge/Visual%20Studio%202026-F0ECF8.svg?&logo=visual-studio-26)](https://visualstudio.microsoft.com/)
+[![.NET10](https://img.shields.io/badge/.NET%2010-512BD4?logo=dotnet&logoColor=fff)](#)
 
 > [!IMPORTANT]
 > **This software is free and open source. If someone asks you to pay for it, it's likely a scam.**
 
 # :cd: AutostrongSharp - What is it :interrobang:
-This application can **decrypt and encrypt SaveData files** from various games running on RE Engine. It can also **resign these SaveData files** with your own SteamID to **use any SaveData on your Steam Account**.
+This application can **decrypt and encrypt SaveData files** from various games running on RE Engine. It can also **re-sign these SaveData files** with your own SteamID to **use anyone’s SaveData on your Steam Account**.
 
-## Supported titles*
-| Game Title                | App ID  | Tested Version | Platform |
-|---------------------------|---------|----------------|----------|
-| Devil May Cry 5           | 601150  | 11025947       | PC       |
-| Resident Evil 2 Remake    | 883710  | 11636119       | PC       |
-| Resident Evil 3 Remake    | 952060  | 11960962       | PC       |
-| Resident Evil 7 Biohazard | 418370  | 11026049       | PC       |
-| Resident Evil 8 Village   | 1196590 | 11260452       | PC       |
+> [!NOTE]
+The Autostrong encryption scheme is built on the Blowfish algorithm.
 
-**the most recent versions that I have tested and are supported.*
+## Supported game titles
+|Game Title|App ID|Platform|
+|---|---|---|
+|Apollo Justice Ace Attorney Trilogy|2187220|Steam|
+|Capcom Arcade 2nd Stadium|1755910|Steam|
+|Capcom Arcade Stadium|1515950|Steam|
+|Devil May Cry 5|601150|Steam|
+|Ghost Trick Phantom Detective|1967430|Steam|
+|Ghosts 'n Goblins Resurrection|1375400|Steam|
+|Onimusha 2 Samurai's Destiny|3046600|Steam|
+|Resident Evil 2 Remake|883710|Steam|
+|Resident Evil 3 Remake|952060|Steam|
+|Resident Evil 7 Biohazard|418370|Steam|
+|Resident Evil 8 Village|1196590|Steam|
 
 # 🤯 Why was it created :interrobang:
 I wanted to share my SaveData files with a friend, but they were incompatible with his Steam Account.
@@ -37,71 +44,114 @@ The short answer is: **No.**
 You have been warned, and now that you are completely aware of what might happen, you may proceed to the next chapter.
 
 # :scroll: How to use this tool
+## [GUI] - 🪟 Windows 
+> [!IMPORTANT]
+> If you’re working on Linux or macOS, skip this chapter and move on to the next one.
 
-<img src="https://github.com/mi5hmash/AutostrongSharp/blob/main/.resources/images/MainWindow.png" alt="MainWindow"/>
+On Windows, you can use either the CLI or the GUI version, but in this chapter I’ll describe the latter.
 
-## Setting the Input Directory
-There are three ways to achieve this. The first one is to drop the SaveData file or a folder that contains it, onto a TextBox **(1)** or a button **(2)**. Alternatively, you may use a button **(2)** to open a folder-picker window and navigate to the directory with it. You can also type the path to the folder in the **(1)** TextBox.
+<img src="https://github.com/mi5hmash/AutostrongSharp/blob/main/.resources/images/MainWindow-v2.png" alt="MainWindow-v2"/>
 
-> [!TIP]
-> The program will extract the Steam32_ID from the "Input Folder Path" TextBox **(1)**, if it ends with *"<steam_id>\\<steam_appid>\remote\win64_save"*, and will fill the TextBox **(3)** for you.
+### BASIC OPERATIONS
 
-## About Steam32 ID
-It is a 32-bit representation of your 64-bit SteamID.
+#### 1. Setting the Input Directory
+You can set the input folder in whichever way feels most convenient:
+- **Drag & drop:** Drop SaveData file - or the folder containing it - onto the TextBox **(1)**.
+- **Pick a folder manually:** Click the button **(2)** to open a folder‑picker window and browse to the directory where SaveData file is.
+- **Type it in:** If you already know the path, simply enter it directly into the TextBox **(1)**.
 
-##### Example:
-| 64-bit SteamID    | 32-bit SteamID |
-|-------------------|----------------|
-| 76561197960265729 | 1              |
+#### 2. Entering the User ID
+In the case of Steam, your User ID is [your Friend Code](https://steamcommunity.com/friends/add).  
+
+#### 3. Selecting the Game Profile
+Game Profile is a configuration file that stores the settings for a specific game.
+In plain terms, it tells my application how it should behave for that particular game.
+I include a package with ready‑to‑use Game Profile files (**profiles.zip**) in the release section.
+The ***"_profiles"*** folder inside that package, containing the Game Profile files, should be placed in the same directory as the program’s executable.
+Button **(4)** opens the local ***"_profiles"*** folder.
+
+#### 4. Re-signing SaveData files
+If you want to re-sign your SaveData files so you can use them on another Steam Account, type in the User ID of that Steam Account into a TextBox **(3)**. Once you have it typed in, select the Game Profile **(5)** corresponding to the game from which the save file comes, and press the **"Re-sign All"** button **(9)**.
 
 > [!NOTE]
-> Steam32 ID is also known as AccountID or Friend Code. 
+> The re‑signed files will be placed in a newly created folder within the ***"AutostrongSharp/_OUTPUT/"*** folder.
 
-> [!TIP]
-You can use the calculator on [steamdb.info](https://steamdb.info/calculator/) to find your SteamID.
+#### 5. Accessing modified files
+Modified files are being placed in a newly created folder within the ***"AutostrongSharp/_OUTPUT/"*** folder. You may open this directory in a new File Explorer window by pressing the button **(10)**.
 
-## Resigning files
-If you want to resign your SaveData files so you can use them on another Steam Account, type in the Steam32_ID of that Steam Account into a TextBox **(3)**. Once you have it typed in, select the Game Profile **(4)** corresponding to the game from which the save file comes, and press the **"Resign All"** button **(10)**.
+> [!NOTE]
+> After you locate the modified files, you can copy them into your save‑game folder.
+> For Steam, the path looks like this:
+> ***"<STEAM_INSTALL_DIRECTORY>/userdata/<USER_ID>/<APP_ID>/remote/win64_save/"***
 
-## Enabling SuperUser Mode
+> [!IMPORTANT]
+> If the SaveData files you re‑signed do not appear in the game menu, please read <a href="https://github.com/mi5hmash/AutostrongSharp/tree/main/.resources/Save%20Files" target="_blank">this document</a>.
+
+### ADVANCED OPERATIONS
+
+#### Enabling SuperUser Mode
 
 > [!WARNING]
 > This mode is for advanced users only.
 
 If you really need it, you can enable SuperUser mode by triple-clicking the version number label **(11)**.
 
-## Decrypting files
+#### Decrypting SaveData files
 
 > [!IMPORTANT]  
 > This button is visible only when the SuperUser Mode is Enabled. 
 
-If you want to decrypt SaveData file\s to read its content, select the Game Profile **(4)** corresponding to the game from which the SaveData file comes, and press the **"Decrypt All"** button **(7)**.
+If you want to decrypt SaveData file\s to read its content, select the Game Profile **(5)** corresponding to the game from which the SaveData file comes, and press the **"Decrypt All"** button **(6)**.
 
-## Encrypting files
+#### Encrypting SaveData files
 
 > [!IMPORTANT]  
 > This button is visible only when the SuperUser Mode is Enabled. 
 
-If you want to encrypt the decrypted SaveData file\s, select the Game Profile **(4)** corresponding to the game from which the SaveData file comes, and press the **"Encrypt All"** button **(8)**.
+If you want to encrypt the decrypted SaveData file\s, select the Game Profile **(5)** corresponding to the game from which the SaveData file comes, and press the **"Encrypt All"** button **(7)**.
 
-## Backup functionality
-By default, the backup option is checked **(5)**. In this state, the application will back up files before each operation to the new folder inside the ***"AutostrongSharp/_BACKUP/"*** directory. This app can create up to 3 zip archives.
+### OTHER BUTTONS
+Button **(8)** cancels the currently running operation.
 
-## Open the Backup Directory
-You may open the ***"AutostrongSharp/_BACKUP/"*** directory in a new File Explorer window by pressing the button **(6)**.
+## [CLI] - 🪟 Windows | 🐧 Linux | 🍎 macOS
 
-## Other buttons
-Button **(9)** cancels the currently running operation.
+```plaintext
+Usage: .\autostrong-sharp-cli.exe -m <mode> [options]
+
+Modes:
+  -m d  Decrypt SaveData files
+  -m e  Encrypt SaveData files
+  -m r  Re-sign SaveData files
+
+Options:
+  -g <game_profile_path>  Path to the Game Profile file
+  -p <input_folder_path>  Path to folder containing SaveData files
+  -u <user_id>            User ID (used in re-sign mode)
+  -v                      Verbose output
+  -h                      Show this help message
+```
+
+### Examples
+#### Decrypt
+```bash
+.\autostrong-sharp-cli.exe -m d -g ".\game_profile.bin" -p ".\InputDirectory"
+```
+#### Encrypt
+```bash
+.\autostrong-sharp-cli.exe -m e -g ".\game_profile.bin" -p ".\InputDirectory"
+```
+#### Re-sign
+```bash
+.\autostrong-sharp-cli.exe -m r -g ".\game_profile.bin" -p ".\InputDirectory" -u 1
+```
+
+> [!NOTE]
+> Modified files are being placed in a newly created folder within the ***"AutostrongSharp/_OUTPUT/"*** folder.
 
 # :fire: Issues
 All the problems I've encountered during my tests have been fixed on the go. If you find any other issues (which I hope you won't) feel free to report them [there](https://github.com/mi5hmash/AutostrongSharp/issues).
 
 > [!TIP]
 > This application creates a log file that may be helpful in troubleshooting.  
-It can be found in the same directory as the executable file.
-
-**IF YOU DO NOT SEE SAVEDATA FILES THAT YOU HAVE RESIGNED, IN THE GAME MENU, THEN PLEASE, READ <a href="https://github.com/mi5hmash/AutostrongSharp/tree/main/.resources/Save%20Files" target="_blank">THIS DOCUMENT</a>.**
-
-# :star: Sources
-* https://github.com/tremwil/DS3SaveUnpacker
-* https://www.steamgriddb.com - Game Profile icons
+It can be found in the same directory as the executable file.  
+Application stores up to two log files from the most recent sessions.

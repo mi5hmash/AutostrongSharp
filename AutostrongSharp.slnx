@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="autostrong-sharp-cli/autostrong-sharp-cli.csproj" Id="40b7ef20-1ef8-44ce-804e-4af79eb275ee" />
+  <Project Path="AutostrongSharpCore/AutostrongSharpCore.csproj" Id="926fbf02-6c12-4f79-8c88-396febf1b151" />
+  <Project Path="AutostrongSharpWpf/AutostrongSharpWpf.csproj" Id="382b310c-1de8-4177-b204-1b829e7cdeee" />
+  <Project Path="GameProfileEditor/GameProfileEditor.csproj" Id="18e79965-eed7-42de-900a-ff7743bc3538" />
+  <Project Path="QualityControl.xUnit/QualityControl.xUnit.csproj" Id="366282f2-afad-46ce-a4c9-72dfaa6cc5a4" />
+</Solution>

@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows7.0</TargetFramework>
+		<RootNamespace>GameProfileEditor</RootNamespace>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>$(AssemblyVersion)</FileVersion>
+		<Version>$(AssemblyVersion)</Version>
+		<Authors>Mi5hmasH</Authors>
+		<Company>$(Authors)</Company>
+		<Copyright>$(Authors) © $([System.DateTime]::UtcNow.Year)</Copyright>
+		<PackageProjectUrl>https://github.com/mi5hmash/AutostrongSharp</PackageProjectUrl>
+		<Description>A simple editor for Game Profile files for AutostrongSharp.</Description>
+		<ApplicationIcon>AppIcon.ico</ApplicationIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Resource Include="Fonts\IconFont.otf" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Include="..\AutostrongSharpWpf\Fonts\IconFont.cs" Link="Fonts\IconFont.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Mi5hmasH.GameProfile" Version="0.0.1" />
+		<PackageReference Include="Mi5hmasH.WpfHelper" Version="0.0.2" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\AutostrongSharpCore\AutostrongSharpCore.csproj" />
+	</ItemGroup>
+	
+</Project>
