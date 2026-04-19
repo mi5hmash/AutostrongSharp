@@ -73,15 +73,15 @@ Console.WriteLine(breakLine);
 
 #region MAIN
 
+// Optional argument: doNotWait
+var doNotWait = arguments.ContainsKey("-q");
+
 // Show HELP if no arguments are provided or if -h is provided
 if (arguments.Count == 0 || arguments.ContainsKey("-h"))
 {
     PrintHelp();
-    return;
+    goto EXIT;
 }
-
-// Optional argument: isVerbose
-var isVerbose = arguments.ContainsKey("-v");
 
 // Get MODE
 arguments.TryGetValue("-m", out var mode);
@@ -96,19 +96,18 @@ switch (mode)
     case "resign" or "r":
         ResignAll();
         break;
+    case "owner" or "o":
+        GetOwner();
+        break;
     default:
         throw new ArgumentException($"Unknown mode: '{mode}'.");
 }
 
 // EXIT the application
+EXIT:
 Console.WriteLine(breakLine); // print a break line
 ConsoleHelper.SayGoodbye(breakLine);
-#if DEBUG
-ConsoleHelper.PressAnyKeyToExit();
-#else
-if (isVerbose) ConsoleHelper.PressAnyKeyToExit();
-#endif
-
+if (!doNotWait) ConsoleHelper.PressAnyKeyToExit();
 return;
 
 #endregion
@@ -128,18 +127,20 @@ static void PrintHelp()
                          -m d  Decrypt SaveData files
                          -m e  Encrypt SaveData files
                          -m r  Re-sign SaveData files
+                         -m o  Get current owner of the first SaveData file
 
                        Options:
                          -g <game_profile_path>  Path to the Game Profile file
                          -p <input_folder_path>  Path to folder containing SaveData files
                          -u <user_id>            User ID (used in re-sign mode)
-                         -v                      Verbose output
+                         -q                      Don't wait for user input to exit after operation completes (auto-close)
                          -h                      Show this help message
 
                        Examples:
                          Decrypt:  {exeName} -m d -g "{gameProfilePath}" -p "{inputPath}"
                          Encrypt:  {exeName} -m e -g "{gameProfilePath}" -p "{inputPath}"
                          Re-sign:  {exeName} -m r -g "{gameProfilePath}" -p "{inputPath}" -u {userId}
+                         Get Owner:  {exeName} -m o -g "{gameProfilePath}" -p "{inputPath}"
                        """;
     Console.WriteLine(helpMessage);
 }
@@ -197,6 +198,13 @@ void ResignAll()
     LoadGameProfile();
     core.ResignFiles(inputRootPath, Convert.ToUInt32(userId), cts);
     cts.Dispose();
+}
+
+void GetOwner()
+{
+    var inputRootPath = GetValidatedInputRootPath();
+    LoadGameProfile();
+    core.GetCurrentOwner(inputRootPath);
 }
 
 #endregion

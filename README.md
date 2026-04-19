@@ -84,9 +84,6 @@ Modified files are being placed in a newly created folder within the ***"Autostr
 > For Steam, the path looks like this:
 > ***"<STEAM_INSTALL_DIRECTORY>/userdata/<USER_ID>/<APP_ID>/remote/win64_save/"***
 
-> [!IMPORTANT]
-> If the SaveData files you re‑signed do not appear in the game menu, please read <a href="https://github.com/mi5hmash/AutostrongSharp/tree/main/.resources/Save%20Files" target="_blank">this document</a>.
-
 ### ADVANCED OPERATIONS
 
 #### Enabling SuperUser Mode
@@ -112,6 +109,7 @@ If you want to encrypt the decrypted SaveData file\s, select the Game Profile **
 
 ### OTHER BUTTONS
 Button **(8)** cancels the currently running operation.
+Button **(12)** tries to get the current owner of the first SaveData file in the Input Directory.
 
 ## [CLI] - 🪟 Windows | 🐧 Linux | 🍎 macOS
 
@@ -122,12 +120,13 @@ Modes:
   -m d  Decrypt SaveData files
   -m e  Encrypt SaveData files
   -m r  Re-sign SaveData files
+  -m o  Get current owner of the first SaveData file
 
 Options:
   -g <game_profile_path>  Path to the Game Profile file
   -p <input_folder_path>  Path to folder containing SaveData files
   -u <user_id>            User ID (used in re-sign mode)
-  -v                      Verbose output
+  -q                      Don't wait for user input to exit after operation completes (auto-close)
   -h                      Show this help message
 ```
 
@@ -145,6 +144,11 @@ Options:
 .\autostrong-sharp-cli.exe -m r -g ".\game_profile.bin" -p ".\InputDirectory" -u 1
 ```
 
+#### Get current owner of the first SaveData file
+```bash
+.\autostrong-sharp-cli.exe -m o -g ".\game_profile.bin" -p ".\InputDirectory"
+```
+
 > [!NOTE]
 > Modified files are being placed in a newly created folder within the ***"AutostrongSharp/_OUTPUT/"*** folder.
 
@@ -155,3 +159,12 @@ All the problems I've encountered during my tests have been fixed on the go. If 
 > This application creates a log file that may be helpful in troubleshooting.  
 It can be found in the same directory as the executable file.  
 Application stores up to two log files from the most recent sessions.
+
+## [ISSUE] Game doesn’t detect SaveData file\s on Steam
+If you purchased the game on Steam and it doesn’t detect your re‑signed SaveData files after you’ve placed them in the correct folder, the issue is usually that a valid `remotecache.vdf` file also needs to be generated.
+
+Instructions on how to generate a proper `remotecache.vdf` can be found in [this gist](https://gist.github.com/mi5hmash/47f1be53d213be9b00f2c7e0aa151b11).
+
+## [ISSUE] Not all controls are visible in the WPF application on Windows
+You probably have your Windows system font size set higher than the default.
+Set the font size back to the default value, or press **`CTRL + SHIFT + J`** to unlock window resizing in the application.

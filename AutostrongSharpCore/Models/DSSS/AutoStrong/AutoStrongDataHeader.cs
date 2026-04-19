@@ -126,23 +126,32 @@ public class AutoStrongDataHeader
     public bool IsEncrypted() => FileFormat1 != Dsss || FileFormat2 != Dsss;
 
     /// <summary>
-    /// Retrieves the user identifier, optionally decrypting it using the provided deencryptor.
+    /// Retrieves the user identifier.
     /// </summary>
-    /// <param name="deencryptor">The deencryptor instance used to perform the deencryption.</param>
-    /// <returns>The user identifier as an unsigned integer. If the data is not encrypted, returns the stored user identifier; otherwise, returns the decrypted value.</returns>
+    /// <param name="deencryptor">An instance of <see cref="AutoStrongDeencryptor"/> used to decrypt and re-encrypt the header data.</param>
+    /// <returns>The user identifier as an unsigned integer.</returns>
+    /// <exception cref="Exception">Thrown if the user identifier cannot be decrypted successfully.</exception>
     public uint GetUserId(AutoStrongDeencryptor deencryptor)
     {
-        if (!IsEncrypted()) return UserId;
-        var dataSpan = _data.AsSpan(2, 2);
+        if (!IsEncrypted()) 
+            return UserId;
+        var dataSpan = _data.AsSpan(0, 4);
         deencryptor.DecryptHeader(dataSpan);
-        return dataSpan[0];
+        var wasDecryptedCorrectly = !IsEncrypted();
+        var result = dataSpan[2];
+        deencryptor.EncryptHeader(dataSpan);
+
+        return wasDecryptedCorrectly
+            ? result 
+            : throw new Exception("Failed to decrypt and get UserId.");
     }
 
     /// <summary>
-    /// Sets the user identifier, updating the encrypted or unencrypted value as appropriate.
+    /// Sets the user identifier.
     /// </summary>
-    /// <param name="newUserId">The new user identifier to assign. This value will be stored in encrypted form if encryption is enabled.</param>
-    /// <param name="deencryptor">The deencryptor instance used to perform the deencryption.</param>
+    /// <param name="newUserId">The new user identifier to assign if decryption succeeds.</param>
+    /// <param name="deencryptor">An instance of <see cref="AutoStrongDeencryptor"/> used to decrypt and re-encrypt the header data.</param>
+    /// <exception cref="Exception">Thrown if the header cannot be decrypted successfully and the user identifier cannot be set.</exception>
     public void SetUserId(uint newUserId, AutoStrongDeencryptor deencryptor)
     {
         if (!IsEncrypted())
@@ -150,10 +159,14 @@ public class AutoStrongDataHeader
             UserId = newUserId;
             return;
         }
-        var dataSpan = _data.AsSpan(2,2);
+        var dataSpan = _data.AsSpan(0, 4);
         deencryptor.DecryptHeader(dataSpan);
-        dataSpan[0] = newUserId;
+        var wasDecryptedCorrectly = !IsEncrypted();
+        if (wasDecryptedCorrectly) 
+            UserId = newUserId;
         deencryptor.EncryptHeader(dataSpan);
+        if (!wasDecryptedCorrectly) 
+            throw new Exception("Failed to decrypt and set UserId.");
     }
 
     /// <summary>

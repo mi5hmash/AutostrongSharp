@@ -42,7 +42,8 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
     {
         // GET FILES TO PROCESS
         var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
-        if (filesToProcess.Length == 0) return;
+        if (filesToProcess.Length == 0) 
+            return;
         // DECRYPT
         logger.LogInfo($"Decrypting [{filesToProcess.Length}] files...");
         // Create a new folder in OUTPUT directory
@@ -145,7 +146,8 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
     {
         // GET FILES TO PROCESS
         var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
-        if (filesToProcess.Length == 0) return;
+        if (filesToProcess.Length == 0) 
+            return;
         // ENCRYPT
         logger.LogInfo($"Encrypting [{filesToProcess.Length}] files...");
         // Create a new folder in OUTPUT directory
@@ -250,7 +252,8 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
     {
         // GET FILES TO PROCESS
         var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
-        if (filesToProcess.Length == 0) return;
+        if (filesToProcess.Length == 0) 
+            return;
         // RE-SIGN
         logger.LogInfo($"Re-signing [{filesToProcess.Length}] files...");
         // Create a new folder in OUTPUT directory
@@ -329,5 +332,57 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
             // Ensure progress is set to 100% at the end
             progressReporter.Report(100);
         }
+    }
+
+    /// <summary>
+    /// Asynchronously retrieves the user ID of the current owner from the first available AutoStrong file in the specified directory.
+    /// </summary>
+    /// <param name="inputDir">The path to the directory containing AutoStrong files to process. Cannot be null or empty.</param>
+    /// <returns>The user ID of the current owner if a valid AutoStrong file is found and processed successfully; otherwise, <see langword="null"/>.</returns>
+    public async Task<uint?> GetCurrentOwnerAsync(string inputDir)
+        => await Task.Run(() => GetCurrentOwner(inputDir));
+
+    /// <summary>
+    /// Retrieves the user ID of the current owner from the first available AutoStrong file in the specified directory.
+    /// </summary>
+    /// <param name="inputDir">The path to the directory containing AutoStrong files to process. Cannot be null or empty.</param>
+    /// <returns>The user ID of the current owner if a valid AutoStrong file is found and processed successfully; otherwise, <see langword="null"/>.</returns>
+    public uint? GetCurrentOwner(string inputDir)
+    {
+        // GET FILES TO PROCESS
+        var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
+        if (filesToProcess.Length == 0) 
+            return null;
+        var file = filesToProcess[0];
+        var fileName = Path.GetFileName(file);
+        // Try to read file data
+        byte[] data;
+        try { data = File.ReadAllBytes(file); }
+        catch (Exception ex)
+        {
+            logger.LogError($"Failed to read the [{fileName}] file: {ex}");
+            return null;
+        }
+        // Process file data
+        var autoStrongFile = new AutoStrongFile(Deencryptor);
+        try { autoStrongFile.SetFileData(data); }
+        catch (Exception ex)
+        {
+            logger.LogError($"Failed to process the [{fileName}] file data: {ex}");
+            return null;
+        }
+        // Try to get user ID
+        try
+        {
+            var userId = autoStrongFile.DataHeader.GetUserId(Deencryptor);
+            logger.LogInfo($"UserId has been found: {userId}.");
+            // Return user ID
+            return userId;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"Failed to get the UserId from the [{fileName}]: {ex}");
+        }
+        return null;
     }
 }

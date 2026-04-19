@@ -105,7 +105,7 @@ public sealed class AutostrongSharpCoreTests : IDisposable
     private void LoadGameProfile()
     {
         // Load GameProfile
-        _gameProfileManager.SetEncryptor(Keychain.SettingsMagic);
+        _gameProfileManager.SetEncryptor(Keychain.GpMagic);
         _gameProfileManager.Load(Properties.Resources.profileFile, "profile");
         // Copy EncryptionKey and SBox to Deencryptor
         _core.Deencryptor.Configure(_gameProfileManager.GameProfile.EncryptionKey?.FromBase64<uint>(), _gameProfileManager.GameProfile.Sbox?.FromBase64<uint>());

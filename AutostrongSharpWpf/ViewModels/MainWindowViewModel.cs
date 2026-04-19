@@ -43,6 +43,7 @@ public partial class MainWindowViewModel : ObservableValidator
     public static string FolderIcon => IconFont.Folder;
     public static string FolderSymlinkIcon => IconFont.FolderSymlink;
     public static string GithubIcon => IconFont.Github;
+    public static string KeyIcon => IconFont.Key;
     public static string ResignIcon => IconFont.Resign;
     public static string XCircleIcon => IconFont.XCircle;
     #endregion
@@ -81,21 +82,7 @@ public partial class MainWindowViewModel : ObservableValidator
         AppDomain.CurrentDomain.ProcessExit += (_, _) => _logger.Flush();
     }
     #endregion
-
-    #region USER_ID
-    [ObservableProperty]
-    [NotifyDataErrorInfo]
-    [Required]
-    [Range(0, uint.MaxValue)] 
-    private string _userId = "0";
-
-    private void ExtractUserIdFromFilePath()
-    {
-        var uid = InputFolderPath.ExtractUserId();
-        if (uid != string.Empty) UserId = uid;
-    }
-    #endregion
-
+    
     #region INPUT_FOLDER_PATH
     [ObservableProperty]
     [NotifyDataErrorInfo]
@@ -131,6 +118,35 @@ public partial class MainWindowViewModel : ObservableValidator
     [RelayCommand]
     private static void OpenOutputDirectory()
         => Directories.OpenDirectory(Directories.Output);
+    #endregion
+
+    #region USER_ID
+    [ObservableProperty]
+    [NotifyDataErrorInfo]
+    [Required]
+    [Range(0, uint.MaxValue)]
+    private string _userId = "0";
+    
+    [RelayCommand]
+    private void GetCurrentOwner()
+    {
+        // First, try to get the owner using the Core's method
+        var owner = _core.GetCurrentOwner(InputFolderPath);
+        if (owner != null)
+        {
+            UserId = owner.ToString() ?? throw new InvalidOperationException();
+            return;
+        }
+        // If that fails, attempt to extract the UserId from the path using a regex
+        var uid = InputFolderPath.ExtractUserId();
+        if (uid != string.Empty)
+        {
+            UserId = uid;
+            _logger.LogInfo($"Extracted UserId from the path: {uid}");
+            return;
+        }
+        _logger.LogError("Couldn't find the owner for the file.");
+    }
     #endregion
 
     #region APP_SETTINGS
@@ -269,6 +285,12 @@ public partial class MainWindowViewModel : ObservableValidator
         if (filePaths.Count < 1) return;
         if (operationType == "GetInputPath") InputFolderPath = filePaths[0] ?? string.Empty;
     }
+    #endregion
+
+    #region WINDOW_RESIZE_UNLOCK
+    [RelayCommand]
+    private static void UnlockWindowResize(Window window)
+        => window.ResizeMode = ResizeMode.CanResizeWithGrip;
     #endregion
 
     private CancellationTokenSource _cts = new();

@@ -12,10 +12,19 @@
         d:Title="AppTitle"
         Title="{Binding ViewModel.AppTitle, Mode=OneWay}"
         d:DesignHeight="270"
-        Height="270" 
+        Height="270"
+        MinHeight="270"
         d:DesignWidth="730"
         Width="730"
+        MinWidth="730"
         ResizeMode="CanMinimize">
+    <!-- Input Bindings -->
+    <Window.InputBindings>
+        <KeyBinding Key="J"
+                    Modifiers="Control+Shift"
+                    Command="{Binding ViewModel.UnlockWindowResizeCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" />
+    </Window.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -64,7 +73,18 @@
                     </Grid.ColumnDefinitions>
                     <!-- UserId -->
                     <StackPanel>
-                        <Label Content="User ID" />
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="User ID" />
+                            <Button
+                                Padding="3"
+                                FontSize="9"
+                                FontFamily="{StaticResource IconFont}"
+                                d:Content="X"
+                                Content="{Binding ViewModel.KeyIcon}"
+                                ToolTip="Find current owner"
+                                Command="{Binding ViewModel.GetCurrentOwnerCommand}"
+                                Margin="10,0,0,5" />
+                        </StackPanel>
                         <TextBox 
                             x:Name="UserIdTextBox" 
                             Text="{Binding ViewModel.UserId, UpdateSourceTrigger=LostFocus, Mode=TwoWay}" 

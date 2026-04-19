@@ -81,7 +81,7 @@ namespace QualityControl.xUnit.Properties {
         }
         
         /// <summary>
-        /// Wyszukuje zlokalizowany ciąg podobny do ciągu u/7DdFX+9TN4AB1U0RCOcVPcgo8qBtP0dqFO1E/0j5zKYnHocRvl6+ci6eKSdUQn3zX5PN/Z7qf1/1BNWlkMhQReeFal83UVOSzS9pO8tT288E59s4bmNd89fNh1CnlKSIxd7xP2aFnJBCX0zeSLaKAneQNPQirOMxuGdJlm9XY+/YFaRXGjJlv4dzzpezgRUCyCC43Ejp7HjvULdL7Or3cjhmOFX4n0Pb7TBUEsAj2odgg37Emz6qd/uc05WZSuMFf7o4/ywJ0sV/9sIOVFWkCe9QjAJXIqm5K8iFO5E0TnOJDvpmZGIT8Z0Qlm7Wwfmu66on9qhHQ7Aht/BIW/KXX+sEM8snQYzbXfqfUqvcmhX1xNhLSLEv5lQ1357gzqknL218Uq9qyjsYq46yCykqnKRmsccxiw7yPIZgexO3KmSy+8eaGrVqVurmI+sOIQKOT2T8dsCAsCzwbAEgeXcfBXx9q+AMW2n06WJnYeT2SWzwm7VoZLlMBPD8xE5bql [obcięto pozostałą część ciągu]&quot;;.
+        /// Wyszukuje zlokalizowany ciąg podobny do ciągu NZrdyke9CJLmP/1o6eOtou0XbxUP5a5T1RaAnbgNQPW/Fyr2h3H1FKwYyixz8Wjbtd8m5nx52vxk4Yqs2btRcJilUXEi8H0Bj+ws3FymtGYpaq2l0XVViYrYOvpV5HiukYWuf/iD4AToFNt2n8WmY6aFbhS3nop10gAGzqZCIJuF8ZWcvaMSKl+Sfuv6MhffXnxHZQy6gjZca5TeGcmavhQXjhHFlWikBP5b5Y6j39b76Ccm5MW/REJBsgt6Z/RlS1vnc+6foTxh+lD57JKuc+0FCcPnbOBDayuJhOn0c4+4RgW97R3dl4f8+bBows+uoNSuXN7o5vZxcGYAQMuMTqr9QHztErl0q/CdGATgsReyIrhNLd2NSk1vENmyo14/BFgzswTvOACOurY2llEoumt/ENBBLzJC+7WiZ1FAd4geu0JDSx99f3e2TJxwCTpxkeX/BTWwtCZyzgbWWXxlKwxm9m/6MG9dYt1C94Ge3vceZL5M96kX68pnclmgq/Oy [obcięto pozostałą część ciągu]&quot;;.
         /// </summary>
         internal static string profileFile {
             get {
