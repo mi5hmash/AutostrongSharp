@@ -5,6 +5,7 @@ using AutostrongSharpCore.Infrastructure;
 using AutostrongSharpCore.Models.DSSS.AutoStrong;
 using Mi5hmasH.GameProfile;
 using Mi5hmasH.Logger;
+using Mi5hmasH.Progress;
 
 namespace QualityControl.xUnit;
 

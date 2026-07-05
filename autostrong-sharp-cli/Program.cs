@@ -6,8 +6,10 @@ using Mi5hmasH.AppInfo;
 using Mi5hmasH.ConsoleHelper;
 using Mi5hmasH.GameProfile;
 using Mi5hmasH.Logger;
+using Mi5hmasH.Logger.Enums;
+using Mi5hmasH.Logger.LogProvidersFactory.LogProviders;
 using Mi5hmasH.Logger.Models;
-using Mi5hmasH.Logger.Providers;
+using Mi5hmasH.Progress;
 
 #region SETUP
 
@@ -33,7 +35,7 @@ logger.AddProvider(fileLogProvider);
 AppDomain.CurrentDomain.UnhandledException += (_, e) =>
 {
     if (e.ExceptionObject is not Exception exception) return;
-    var logEntry = new LogEntry(SimpleLogger.LogSeverity.Critical, $"Unhandled Exception: {exception}");
+    var logEntry = new LogEntry(LogSeverityEnum.Critical, $"Unhandled Exception: {exception}");
     fileLogProvider.Log(logEntry);
     fileLogProvider.Flush();
 };
@@ -151,7 +153,7 @@ string GetValidatedInputRootPath()
     if (File.Exists(inputRootPath)) inputRootPath = Path.GetDirectoryName(inputRootPath);
     return !Directory.Exists(inputRootPath)
         ? throw new DirectoryNotFoundException($"The provided path '{inputRootPath}' is not a valid directory or does not exist.")
-        : inputRootPath;
+        : inputRootPath.TrimDirectorySeparator();
 }
 
 void LoadGameProfile()
@@ -172,32 +174,29 @@ void LoadGameProfile()
 
 void DecryptAll()
 {
-    var cts = new CancellationTokenSource();
+    using var cts = new CancellationTokenSource();
     var inputRootPath = GetValidatedInputRootPath();
     LoadGameProfile();
     core.DecryptFiles(inputRootPath, cts);
-    cts.Dispose();
 }
 
 void EncryptAll()
 {
-    var cts = new CancellationTokenSource();
+    using var cts = new CancellationTokenSource();
     var inputRootPath = GetValidatedInputRootPath();
     LoadGameProfile();
     core.EncryptFiles(inputRootPath, cts);
-    cts.Dispose();
 }
 
 void ResignAll()
 {
-    var cts = new CancellationTokenSource();
+    using var cts = new CancellationTokenSource();
     arguments.TryGetValue("-u", out var userId);
     if (string.IsNullOrEmpty(userId))
         throw new ArgumentException("Output User ID is missing.");
     var inputRootPath = GetValidatedInputRootPath();
     LoadGameProfile();
     core.ResignFiles(inputRootPath, Convert.ToUInt32(userId), cts);
-    cts.Dispose();
 }
 
 void GetOwner()

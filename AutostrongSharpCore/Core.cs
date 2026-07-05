@@ -2,6 +2,7 @@
 using AutostrongSharpCore.Infrastructure;
 using AutostrongSharpCore.Models.DSSS.AutoStrong;
 using Mi5hmasH.Logger;
+using Mi5hmasH.Progress;
 
 namespace AutostrongSharpCore;
 
@@ -25,6 +26,14 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
         };
 
     /// <summary>
+    /// Marks the progress reporting as complete by reporting 100% progress.
+    /// </summary>
+    /// <param name="progressTracker">The progress tracker used to report progress.</param>
+    /// <param name="errorCounter">The error counter used to report errors.</param>
+    private void LogAllTasksCompleted(ProgressTracker progressTracker, ErrorCounter errorCounter)
+        => logger.LogInfo($"{progressTracker} All tasks completed. {errorCounter}");
+
+    /// <summary>
     /// Asynchronously decrypts all files in the specified input directory.
     /// </summary>
     /// <param name="inputDir">The path to the directory containing the files to decrypt.</param>
@@ -41,18 +50,24 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
     public void DecryptFiles(string inputDir, CancellationTokenSource cts)
     {
         // GET FILES TO PROCESS
-        var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
-        if (filesToProcess.Length == 0) 
+        string[] filesToProcess;
+        try { filesToProcess = SaveDataFileIo.GetFiles(inputDir); }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex.Message);
             return;
+        }
+        // INITIALIZE PROGRESS TRACKER
+        var progressTracker = new ProgressTracker(filesToProcess.Length);
+        var errorCounter = new ErrorCounter(logger);
         // DECRYPT
-        logger.LogInfo($"Decrypting [{filesToProcess.Length}] files...");
+        logger.LogInfo($"Decrypting [{progressTracker.Total}] files...");
         // Create a new folder in OUTPUT directory
         var outputDir = Directories.GetNewOutputDirectory("decrypted");
         Directory.CreateDirectory(outputDir);
         // Setup parallel options
         var po = GetParallelOptions(cts);
         // Process files in parallel
-        var progress = 0;
         try
         {
             Parallel.For((long)0, filesToProcess.Length, po, (ctr, _) =>
@@ -67,8 +82,8 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
                     try { data = File.ReadAllBytes(filesToProcess[ctr]); }
                     catch (Exception ex)
                     {
-                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to read the [{fileName}] file: {ex}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to read the [{fileName}] file: {ex}", group);
+                        break;
                     }
                     // Process file data
                     var autoStrongFile = new AutoStrongFile(Deencryptor);
@@ -77,25 +92,25 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
                         autoStrongFile.SetFileData(data, true);
                         if (!autoStrongFile.IsEncrypted)
                         {
-                            logger.LogWarning($"[{progress}/{filesToProcess.Length}] The [{fileName}] file is not encrypted, skipping...", group);
-                            break; // Skip to the next file
+                            errorCounter.AddWarning($"{progressTracker} The [{fileName}] file is not encrypted, skipping...", group);
+                            break;
                         }
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to process the [{fileName}] file data: {ex}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to process the [{fileName}] file data: {ex}", group);
+                        break;
                     }
                     // Try to decrypt file data
                     try
                     {
-                        logger.LogInfo($"[{progress}/{filesToProcess.Length}] Decrypting the [{fileName}] file...", group);
+                        logger.LogInfo($"{progressTracker} Decrypting the [{fileName}] file...", group);
                         autoStrongFile.DecryptFile();
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"Failed to decrypt the file: {ex.Message}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to decrypt the file: {ex.Message}", group);
+                        break;
                     }
                     // Try to save the decrypted file data
                     try
@@ -106,25 +121,24 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"Failed to save the file: {ex}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to save the file: {ex}", group);
+                        break;
                     }
-                    logger.LogInfo($"[{progress}/{filesToProcess.Length}] Decrypted the [{fileName}] file.", group);
+                    logger.LogInfo($"{progressTracker} Decrypted the [{fileName}] file.", group);
                     break;
                 }
-                Interlocked.Increment(ref progress);
-                progressReporter.Report((int)((double)progress / filesToProcess.Length * 100));
+                progressTracker.Increment();
+                progressReporter.Report(progressTracker.Percentage);
             });
-            logger.LogInfo($"[{progress}/{filesToProcess.Length}] All tasks completed.");
+            LogAllTasksCompleted(progressTracker, errorCounter);
         }
         catch (OperationCanceledException ex)
         {
-            logger.LogWarning(ex.Message);
+            errorCounter.AddWarning(ex.Message);
         }
         finally
         {
-            // Ensure progress is set to 100% at the end
-            progressReporter.Report(100);
+            progressReporter.Complete();
         }
     }
 
@@ -145,18 +159,24 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
     public void EncryptFiles(string inputDir, CancellationTokenSource cts)
     {
         // GET FILES TO PROCESS
-        var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
-        if (filesToProcess.Length == 0) 
+        string[] filesToProcess;
+        try { filesToProcess = SaveDataFileIo.GetFiles(inputDir); }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex.Message);
             return;
+        }
+        // INITIALIZE PROGRESS TRACKER
+        var progressTracker = new ProgressTracker(filesToProcess.Length);
+        var errorCounter = new ErrorCounter(logger);
         // ENCRYPT
-        logger.LogInfo($"Encrypting [{filesToProcess.Length}] files...");
+        logger.LogInfo($"Encrypting [{progressTracker.Total}] files...");
         // Create a new folder in OUTPUT directory
         var outputDir = Directories.GetNewOutputDirectory("encrypted");
         Directory.CreateDirectory(outputDir);
         // Setup parallel options
         var po = GetParallelOptions(cts);
         // Process files in parallel
-        var progress = 0;
         try
         {
             Parallel.For((long)0, filesToProcess.Length, po, (ctr, _) =>
@@ -171,8 +191,8 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
                     try { data = File.ReadAllBytes(filesToProcess[ctr]); }
                     catch (Exception ex)
                     {
-                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to read the [{fileName}] file: {ex}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to read the [{fileName}] file: {ex}", group);
+                        break;
                     }
                     // Process file data
                     var autoStrongFile = new AutoStrongFile(Deencryptor);
@@ -181,25 +201,25 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
                         autoStrongFile.SetFileData(data);
                         if (autoStrongFile.IsEncrypted)
                         {
-                            logger.LogWarning($"[{progress}/{filesToProcess.Length}] The [{fileName}] file is already encrypted, skipping...", group);
-                            break; // Skip to the next file
+                            errorCounter.AddWarning($"{progressTracker} The [{fileName}] file is already encrypted, skipping...", group);
+                            break;
                         }
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to process the [{fileName}] file data: {ex}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to process the [{fileName}] file data: {ex}", group);
+                        break;
                     }
                     // Try to encrypt file data
                     try
                     {
-                        logger.LogInfo($"[{progress}/{filesToProcess.Length}] Encrypting the [{fileName}] file...", group);
+                        logger.LogInfo($"{progressTracker} Encrypting the [{fileName}] file...", group);
                         autoStrongFile.EncryptFile();
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"Failed to encrypt the file: {ex.Message}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to encrypt the file: {ex.Message}", group);
+                        break;
                     }
                     // Try to save the encrypted file data
                     try
@@ -210,25 +230,24 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"Failed to save the file: {ex}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to save the file: {ex}", group);
+                        break;
                     }
-                    logger.LogInfo($"[{progress}/{filesToProcess.Length}] Encrypted the [{fileName}] file.", group);
+                    logger.LogInfo($"{progressTracker} Encrypted the [{fileName}] file.", group);
                     break;
                 }
-                Interlocked.Increment(ref progress);
-                progressReporter.Report((int)((double)progress / filesToProcess.Length * 100));
+                progressTracker.Increment();
+                progressReporter.Report(progressTracker.Percentage);
             });
-            logger.LogInfo($"[{progress}/{filesToProcess.Length}] All tasks completed.");
+            LogAllTasksCompleted(progressTracker, errorCounter);
         }
         catch (OperationCanceledException ex)
         {
-            logger.LogWarning(ex.Message);
+            errorCounter.AddWarning(ex.Message);
         }
         finally
         {
-            // Ensure progress is set to 100% at the end
-            progressReporter.Report(100);
+            progressReporter.Complete();
         }
     }
 
@@ -251,18 +270,24 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
     public void ResignFiles(string inputDir, uint userId, CancellationTokenSource cts)
     {
         // GET FILES TO PROCESS
-        var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
-        if (filesToProcess.Length == 0) 
+        string[] filesToProcess;
+        try { filesToProcess = SaveDataFileIo.GetFiles(inputDir); }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex.Message);
             return;
+        }
+        // INITIALIZE PROGRESS TRACKER
+        var progressTracker = new ProgressTracker(filesToProcess.Length);
+        var errorCounter = new ErrorCounter(logger);
         // RE-SIGN
-        logger.LogInfo($"Re-signing [{filesToProcess.Length}] files...");
+        logger.LogInfo($"Re-signing [{progressTracker.Total}] files...");
         // Create a new folder in OUTPUT directory
         var outputDir = Directories.GetNewOutputDirectory("resigned").AddUserIdAndSuffix(userId.ToString());
         Directory.CreateDirectory(outputDir);
         // Setup parallel options
         var po = GetParallelOptions(cts);
         // Process files in parallel
-        var progress = 0;
         try
         {
             Parallel.For((long)0, filesToProcess.Length, po, (ctr, _) =>
@@ -277,16 +302,16 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
                     try { data = File.ReadAllBytes(filesToProcess[ctr]); }
                     catch (Exception ex)
                     {
-                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to read the [{fileName}] file: {ex}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to read the [{fileName}] file: {ex}", group);
+                        break;
                     }
                     // Process file data
                     var autoStrongFile = new AutoStrongFile(Deencryptor);
                     try { autoStrongFile.SetFileData(data); }
                     catch (Exception ex)
                     {
-                        logger.LogError($"[{progress}/{filesToProcess.Length}] Failed to process the [{fileName}] file data: {ex}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to process the [{fileName}] file data: {ex}", group);
+                        break;
                     }
                     autoStrongFile.DataHeader.SetUserId(userId, Deencryptor);
                     if (!autoStrongFile.IsEncrypted)
@@ -294,13 +319,13 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
                         // Try to encrypt file data
                         try
                         {
-                            logger.LogInfo($"[{progress}/{filesToProcess.Length}] Encrypting the [{fileName}] file...", group);
+                            logger.LogInfo($"{progressTracker} Encrypting the [{fileName}] file...", group);
                             autoStrongFile.EncryptFile();
                         }
                         catch (Exception ex)
                         {
-                            logger.LogError($"Failed to encrypt the file: {ex.Message}", group);
-                            break; // Skip to the next file
+                            errorCounter.AddError($"{progressTracker} Failed to encrypt the file: {ex.Message}", group);
+                            break;
                         }
                     }
                     // Try to save the encrypted file data
@@ -312,25 +337,24 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"Failed to save the file: {ex}", group);
-                        break; // Skip to the next file
+                        errorCounter.AddError($"{progressTracker} Failed to save the file: {ex}", group);
+                        break;
                     }
-                    logger.LogInfo($"[{progress}/{filesToProcess.Length}] Re-signed the [{fileName}] file.", group);
+                    logger.LogInfo($"{progressTracker} Re-signed the [{fileName}] file.", group);
                     break;
                 }
-                Interlocked.Increment(ref progress);
-                progressReporter.Report((int)((double)progress / filesToProcess.Length * 100));
+                progressTracker.Increment();
+                progressReporter.Report(progressTracker.Percentage);
             });
-            logger.LogInfo($"[{progress}/{filesToProcess.Length}] All tasks completed.");
+            LogAllTasksCompleted(progressTracker, errorCounter);
         }
         catch (OperationCanceledException ex)
         {
-            logger.LogWarning(ex.Message);
+            errorCounter.AddWarning(ex.Message);
         }
         finally
         {
-            // Ensure progress is set to 100% at the end
-            progressReporter.Report(100);
+            progressReporter.Complete();
         }
     }
 
@@ -350,9 +374,13 @@ public class Core(SimpleLogger logger, ProgressReporter progressReporter)
     public uint? GetCurrentOwner(string inputDir)
     {
         // GET FILES TO PROCESS
-        var filesToProcess = Directory.GetFiles(inputDir, $"*{AutoStrongFile.FileExtension}", SearchOption.TopDirectoryOnly);
-        if (filesToProcess.Length == 0) 
+        string[] filesToProcess;
+        try { filesToProcess = SaveDataFileIo.GetFiles(inputDir); }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex.Message);
             return null;
+        }
         var file = filesToProcess[0];
         var fileName = Path.GetFileName(file);
         // Try to read file data
