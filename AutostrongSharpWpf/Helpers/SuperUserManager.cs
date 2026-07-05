@@ -1,8 +1,8 @@
 ﻿using System.Media;
 using System.Windows.Threading;
-using AutostrongSharpCore.Helpers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Mi5hmasH.Progress;
 
 namespace AutostrongSharpWpf.Helpers;
 
@@ -16,7 +16,8 @@ public partial class SuperUserManager : ObservableObject
     private readonly uint _superUserThreshold;
     private uint _superUserClicks;
 
-    [ObservableProperty] private bool _isSuperUser;
+    [ObservableProperty]
+    public partial bool IsSuperUser { get; set; }
 
     public SuperUserManager(ProgressReporter progressReporter, long timeSpanMs = 500, uint superUserThreshold = 3)
     {

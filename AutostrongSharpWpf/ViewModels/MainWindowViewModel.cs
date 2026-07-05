@@ -10,11 +10,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mi5hmasH.AppInfo;
 using Mi5hmasH.AppSettings;
-using Mi5hmasH.AppSettings.Flavors;
 using Mi5hmasH.GameProfile;
 using Mi5hmasH.Logger;
 using Mi5hmasH.Logger.Models;
-using Mi5hmasH.Logger.Providers;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -22,6 +20,10 @@ using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Media;
 using System.Windows;
+using Mi5hmasH.AppSettings.FlavorsFactory.Flavors;
+using Mi5hmasH.Logger.Enums;
+using Mi5hmasH.Logger.LogProvidersFactory.LogProviders;
+using Mi5hmasH.Progress;
 
 namespace AutostrongSharpWpf.ViewModels;
 
@@ -49,13 +51,17 @@ public partial class MainWindowViewModel : ObservableValidator
     #endregion
 
     #region UI_STATE
-    [ObservableProperty] private bool _isBusy;
-    [ObservableProperty] private bool _isAbortAllowed;
+    [ObservableProperty] 
+    public partial bool IsBusy { get; set; }
+    [ObservableProperty] 
+    public partial bool IsAbortAllowed { get; set; }
     #endregion
 
     #region PROGRESS_REPORTER
-    [ObservableProperty] private int _progressValue;
-    [ObservableProperty] private string _progressText = "Loading...";
+    [ObservableProperty]
+    public partial int ProgressValue { get; set; }
+    [ObservableProperty] 
+    public partial string ProgressText { get; set; } = "Loading...";
     private readonly ProgressReporter _progressReporter;
     #endregion
 
@@ -74,7 +80,7 @@ public partial class MainWindowViewModel : ObservableValidator
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
             if (e.ExceptionObject is not Exception exception) return;
-            var logEntry = new LogEntry(SimpleLogger.LogSeverity.Critical, $"Unhandled Exception: {exception}");
+            var logEntry = new LogEntry(LogSeverityEnum.Critical, $"Unhandled Exception: {exception}");
             fileLogProvider.Log(logEntry);
             fileLogProvider.Flush();
         };
@@ -87,19 +93,24 @@ public partial class MainWindowViewModel : ObservableValidator
     [ObservableProperty]
     [NotifyDataErrorInfo]
     [Required]
-    private string _inputFolderPath = MyAppInfo.RootPath;
-    
+    public partial string InputFolderPath { get; set; } = MyAppInfo.RootPath.TrimDirectorySeparator();
+
     partial void OnInputFolderPathChanged(string value)
     {
-        if (Directory.Exists(value)) return;
+        if (Directory.Exists(value))
+        {
+            value = value.TrimDirectorySeparator();
+            InputFolderPath = value;
+            return;
+        }
         if (File.Exists(value))
         {
-            _inputFolderPath = Path.GetDirectoryName(value) ?? string.Empty;
+            InputFolderPath = Path.GetDirectoryName(value) ?? string.Empty;
             _progressReporter.Report("Input Folder Path is valid.");
             return;
         }
         _progressReporter.Report("Invalid Input Folder Path!");
-        _inputFolderPath = string.Empty;
+        InputFolderPath = string.Empty;
     }
 
     [RelayCommand]
@@ -125,7 +136,7 @@ public partial class MainWindowViewModel : ObservableValidator
     [NotifyDataErrorInfo]
     [Required]
     [Range(0, uint.MaxValue)]
-    private string _userId = "0";
+    public partial string UserId { get; set; } = "0";
     
     [RelayCommand]
     private void GetCurrentOwner()
@@ -181,12 +192,15 @@ public partial class MainWindowViewModel : ObservableValidator
 
     #region GAME_PROFILE
     // GameProfile Manager
-    [ObservableProperty] private GameProfileManager<AutostrongGameProfile> _gameProfileManager = new();
+    [ObservableProperty] 
+    public partial GameProfileManager<AutostrongGameProfile> GameProfileManager { get; set; } = new();
     
     private const string GameProfileExtension = ".bin";
 
-    [ObservableProperty] private string? _gameProfileAppId;
-    [ObservableProperty] private IGamingPlatform? _gamingPlatform;
+    [ObservableProperty]
+    public partial string? GameProfileAppId { get; set; }
+    [ObservableProperty]
+    public partial IGamingPlatform? GamingPlatform { get; set; }
 
     private void LoadGameProfileFile(string path)
     {
@@ -202,9 +216,12 @@ public partial class MainWindowViewModel : ObservableValidator
             GamingPlatform = GamingPlatformHelper.GetGamingPlatform(GameProfileManager.GameProfile.Platform);
         }
     }
-    
-    [ObservableProperty] private ObservableCollection<string> _gameProfileFiles = [];
-    [ObservableProperty] private string? _selectedGameProfileFile;
+
+    [ObservableProperty] 
+    public partial ObservableCollection<string> GameProfileFiles { get; set; } = [];
+
+    [ObservableProperty]
+    public partial string? SelectedGameProfileFile { get; set; }
 
     partial void OnSelectedGameProfileFileChanged(string? value) 
         => LoadGameProfileFile(value ?? string.Empty);
@@ -295,7 +312,8 @@ public partial class MainWindowViewModel : ObservableValidator
 
     private CancellationTokenSource _cts = new();
     private readonly Core _core;
-    [ObservableProperty] private SuperUserManager _superUserManager;
+    [ObservableProperty] 
+    public partial SuperUserManager SuperUserManager { get; set; }
     
     public MainWindowViewModel()
     {

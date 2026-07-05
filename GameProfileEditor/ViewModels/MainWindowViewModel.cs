@@ -11,9 +11,9 @@ using System.Windows.Data;
 using System.Windows.Input;
 using AutostrongSharpCore.GameProfile;
 using AutostrongSharpCore.GamingPlatforms;
-using AutostrongSharpCore.Helpers;
 using AutostrongSharpCore.Infrastructure;
 using AutostrongSharpWpf.Fonts;
+using Mi5hmasH.Progress;
 
 namespace GameProfileEditor.ViewModels;
 
@@ -36,12 +36,14 @@ public partial class MainWindowViewModel : ObservableObject
     #endregion
 
     #region PROGRESS_REPORTER
-    [ObservableProperty] private string _progressText = "Loading...";
+    [ObservableProperty]
+    public partial string ProgressText { get; set; } = "Loading...";
     private readonly ProgressReporter _progressReporter;
     #endregion
 
     #region GAME_PROFILE
-    [ObservableProperty] private GameProfileManager<AutostrongGameProfile> _gameProfileManager = new();
+    [ObservableProperty]
+    public partial GameProfileManager<AutostrongGameProfile> GameProfileManager { get; set; } = new();
 
     private const string GameProfileExtension = ".bin";
 
@@ -159,7 +161,8 @@ public partial class MainWindowViewModel : ObservableObject
     #endregion
 
     #region GAMING_PLATFORM
-    [ObservableProperty] private GamingPlatform[] _gamingPlatformOptions = Enum.GetValues<GamingPlatform>();
+    [ObservableProperty]
+    public partial GamingPlatform[] GamingPlatformOptions { get; set; } = Enum.GetValues<GamingPlatform>();
     #endregion
 
     public MainWindowViewModel()
